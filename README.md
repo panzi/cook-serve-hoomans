@@ -39,12 +39,40 @@ compile for Windows under Linux.)
 **Make a backup of game.unx!** `cook_serve_hoomans.exe` will patch `game.unx`.
 It might (but shouldn't) corrupt the game, so please make a backup first!
 
-Then simply drag and drop `game.unx` onto `cook_serve_hoomans.exe`. If
-everything went well you should see this:
+Then simply drag and drop `game.unx` onto `cook_serve_hoomans.exe`:
+
+![](http://i.imgur.com/6FMEtPd.png)
+
+If everything went well you should see this:
 
 ![](http://i.imgur.com/KJ1bFIg.png)
 
 Just press enter and you are done.
+
+Build From Source
+-----------------
+
+(For advanced users and software developers only.)
+
+In case you want to build this patching tool yourself download the source and
+simply run these commands in the source folder:
+
+```
+mkdir -p "build/`uname|tr '[A-Z]' '[a-z]'``getconf LONG_BIT`"
+make
+```
+
+If you want to cross-compile for another platform you can run one of these
+commands:
+
+```
+make TARGET=linux32
+make TARGET=linux64
+make TARGET=win32
+make TARGET=win64
+```
+
+Always make sure that the folder `build/$TARGET` exists before you run `make`.
 
 How It Works
 ------------
