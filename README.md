@@ -4,9 +4,13 @@ Cook, Serve, Hoomans!
 In [one of her streams](http://www.twitch.tv/feliciaday/v/4517425?t=02h19m22s)
 Felicia Day said she wishes she could put the faces of her fans on the customers
 in [Cook, Serve, Delicious!](http://store.steampowered.com/app/247020/), so I
-made this "mod" that does just that. I still need more pictures of hoomans
-(fans), so send them in! Help from someone who is better with Photoshop/GIMP
-would also be nice, too.
+made this "mod" that does just that.
+
+I still need more pictures of hoomans (fans), so send them in! They don't need
+to be photos if you rather just want your avatar or a drawing to be used. In any
+case don't let your elbows stick out to the side so the picture will fit into
+one of the available slots. Help from someone who is better with Photoshop/GIMP
+would also be nice.
 
 Setup
 -----
