@@ -40,8 +40,8 @@ compile for Windows under Linux.)
 It might (but shouldn't) corrupt the game, so please make a backup first! If
 you have patched `game.unx` once already copy the backup back into the assets
 folder before patching. Otherwise patching might fail if the new replacement
-sprite image is bigger than the old (but still smaller than the original game
-sprite).
+sprite image is bigger than the old (the replacement sprite should still be
+smaller than the original image, that's why restoring the backup is needed).
 
 Then simply drag and drop `game.unx` onto `cook_serve_hoomans.exe`:
 
@@ -52,6 +52,15 @@ If everything went well you should see this:
 ![](http://i.imgur.com/KJ1bFIg.png)
 
 Just press enter and you are done.
+
+Advanced Usage
+--------------
+
+For advanced users there is a second binary called `quick_patch.exe`. You can
+use this to patch `game.unx` witch your own customer and/or icon sprites. Just
+do the same as under [Setup](#setup), but drop `game.unx`, `hoomans.png` and
+`icons.png` all together onto `quick_patch.exe`. It is important that the files
+are named like this so the program knows what to do with which file.
 
 Build From Source
 -----------------
@@ -77,6 +86,7 @@ make TARGET=win64
 ```
 
 Always make sure that the folder `build/$TARGET` exists before you run `make`.
+You can do this simply by running `make TARGET=$TARGET setup`.
 
 How It Works
 ------------

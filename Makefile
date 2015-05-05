@@ -6,8 +6,17 @@ COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu99 -O2
 POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic
 CFLAGS=$(COMMON_CFLAGS)
 BUILDDIR=build/$(TARGET)
-OBJ=$(BUILDDIR)/cook_serve_hoomans.o $(BUILDDIR)/hoomans_png.o $(BUILDDIR)/icons_png.o
+STEAMDIR=~/.steam/steam
+CSD_DIR=$(STEAMDIR)/SteamApps/common/CookServeDelicious
 ARCH_FLAGS=
+
+QP_OBJ=$(BUILDDIR)/patch_game.o \
+       $(BUILDDIR)/quick_patch.o
+
+CSH_OBJ=$(BUILDDIR)/patch_game.o \
+        $(BUILDDIR)/cook_serve_hoomans.o \
+        $(BUILDDIR)/hoomans_png.o \
+        $(BUILDDIR)/icons_png.o
 
 ifeq ($(TARGET),win32)
 	CC=i686-w64-mingw32-gcc
@@ -31,25 +40,43 @@ endif
 endif
 endif
 
-.PHONY: all clean
+.PHONY: all clean cook_serve_hoomans quick_patch patch setup
 
-all: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
+all: cook_serve_hoomans quick_patch
+
+cook_serve_hoomans: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
+
+quick_patch: $(BUILDDIR)/quick_patch$(BINEXT)
+
+setup:
+	mkdir -p $(BUILDDIR)
+
+patch: quick_patch hoomans.png icons.png
+	$(BUILDDIR)/quick_patch$(BINEXT) $(CSD_DIR)/assets/game.unx hoomans.png icons.png
 
 $(BUILDDIR)/%_png.c: %.png
 	$(XXD) -i $< > $@
 
-$(BUILDDIR)/%.o: %_png.c
+$(BUILDDIR)/%.o: %.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILDDIR)/cook_serve_hoomans.o: cook_serve_hoomans.c
+$(BUILDDIR)/%.o: $(BUILDDIR)/%.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(OBJ)
-	$(CC) $(ARCH_FLAGS) $(OBJ) -o $@
+$(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(CSH_OBJ)
+	$(CC) $(ARCH_FLAGS) $(CSH_OBJ) -o $@
+
+$(BUILDDIR)/quick_patch$(BINEXT): $(QP_OBJ)
+	$(CC) $(ARCH_FLAGS) $(QP_OBJ) -o $@
 
 clean:
 	rm -f \
 		$(BUILDDIR)/hoomans_png.c \
 		$(BUILDDIR)/icons_png.c \
-		$(OBJ) \
-		$(BUILDDIR)/cook_serve_hoomans$(BINEXT)
+		$(BUILDDIR)/patch_game.o \
+		$(BUILDDIR)/cook_serve_hoomans.o \
+		$(BUILDDIR)/quick_patch.o \
+		$(BUILDDIR)/hoomans_png.o \
+		$(BUILDDIR)/icons_png.o \
+		$(BUILDDIR)/cook_serve_hoomans$(BINEXT) \
+		$(BUILDDIR)/quick_patch$(BINEXT)
