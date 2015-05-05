@@ -71,7 +71,7 @@ In case you want to build this patching tool yourself download the source and
 simply run these commands in the source folder:
 
 ```
-mkdir -p "build/`uname|tr '[A-Z]' '[a-z]'``getconf LONG_BIT`"
+make setup
 make
 ```
 
