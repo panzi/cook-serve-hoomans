@@ -36,8 +36,12 @@ I don't have a Mac so I don't know where it's there and I can't provide a binary
 for Mac anyway. (I don't use Windows either, but it is easily possible to cross
 compile for Windows under Linux.)
 
-**Make a backup of game.unx!** `cook_serve_hoomans.exe` will patch `game.unx`.
-It might (but shouldn't) corrupt the game, so please make a backup first!
+**Make a backup of `game.unx`!** `cook_serve_hoomans.exe` will patch `game.unx`.
+It might (but shouldn't) corrupt the game, so please make a backup first! If
+you have patched `game.unx` once already copy the backup back into the assets
+folder before patching. Otherwise patching might fail if the new replacement
+sprite image is bigger than the old (but still smaller than the original game
+sprite).
 
 Then simply drag and drop `game.unx` onto `cook_serve_hoomans.exe`:
 
