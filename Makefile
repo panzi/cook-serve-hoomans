@@ -6,6 +6,7 @@ COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu99 -O2
 POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic
 CFLAGS=$(COMMON_CFLAGS)
 BUILDDIR=build/$(TARGET)
+OBJ=$(BUILDDIR)/cook_serve_hoomans.o $(BUILDDIR)/hoomans_png.o $(BUILDDIR)/icons_png.o
 ARCH_FLAGS=
 
 ifeq ($(TARGET),win32)
@@ -34,14 +35,21 @@ endif
 
 all: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
 
-hoomans_png.h: hoomans.png
+$(BUILDDIR)/%_png.c: %.png
 	$(XXD) -i $< > $@
 
-$(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(BUILDDIR)/cook_serve_hoomans.o
-	$(CC) $(ARCH_FLAGS) $< -o $@
-
-$(BUILDDIR)/cook_serve_hoomans.o: cook_serve_hoomans.c hoomans_png.h
+$(BUILDDIR)/%.o: %_png.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
+$(BUILDDIR)/cook_serve_hoomans.o: cook_serve_hoomans.c
+	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(OBJ)
+	$(CC) $(ARCH_FLAGS) $(OBJ) -o $@
+
 clean:
-	rm -f $(BUILDDIR)/cook_serve_hoomans$(BINEXT) $(BUILDDIR)/cook_serve_hoomans.o hoomans_png.h
+	rm -f \
+		$(BUILDDIR)/hoomans_png.c \
+		$(BUILDDIR)/icons_png.c \
+		$(OBJ) \
+		$(BUILDDIR)/cook_serve_hoomans$(BINEXT)

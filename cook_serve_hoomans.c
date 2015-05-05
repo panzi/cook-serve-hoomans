@@ -4,7 +4,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "hoomans_png.h"
+extern unsigned char hoomans_png[];
+extern unsigned int hoomans_png_len;
+
+extern unsigned char icons_png[];
+extern unsigned int icons_png_len;
 
 #if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64)) && !defined(__WINDOWS__)
 
@@ -310,35 +314,52 @@ int patch_game(FILE *file, off_t offset, const unsigned char *data, size_t size,
 	return 0;
 }
 
-#ifdef __WINDOWS__
-#	define END_MESSAGE() printf("Press ENTER to continue..."); getchar();
-#else
-#	define END_MESSAGE()
-#endif
-
 int main(int argc, char *argv[]) {
+	FILE *game = NULL;
+	int status = EXIT_SUCCESS;
+
 	if (argc != 2) {
 		fprintf(stderr, "*** ERROR: please pass the game.unx file to this program.\n");
-		END_MESSAGE();
-		return EXIT_FAILURE;
+		goto error;
 	}
 
-	FILE *game = fopen(argv[1], "r+b");
+	game = fopen(argv[1], "r+b");
 
 	if (!game) {
 		perror(argv[1]);
-		END_MESSAGE();
-		return EXIT_FAILURE;
+		goto error;
+	}
+
+	if (patch_game(game, 0x035c3000, icons_png, icons_png_len, 2048, 2048) != 0) {
+		goto error;
 	}
 
 	if (patch_game(game, 0x03f7da80, hoomans_png, hoomans_png_len, 2048, 1024) != 0) {
-		fclose(game);
-		END_MESSAGE();
-		return EXIT_FAILURE;
+		goto error;
 	}
 
-	fclose(game);
-	printf("Successfully replaced customer sprites.\n");
-	END_MESSAGE();
-	return EXIT_SUCCESS;
+	if (fclose(game) != 0) {
+		perror(argv[1]);
+		game = NULL;
+		goto error;
+	}
+	game = NULL;
+	printf("Successfully replaced sprites.\n");
+
+	goto end;
+
+error:
+	status = EXIT_FAILURE;
+	if (game) {
+		fclose(game);
+	}
+
+end:
+
+#ifdef __WINDOWS__
+	printf("Press ENTER to continue...");
+	getchar();
+#endif
+
+	return status;
 }
