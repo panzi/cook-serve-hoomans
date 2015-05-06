@@ -17,12 +17,12 @@ Setup
 
 Download the latest release from the
 [releases page](https://github.com/panzi/cook-serve-hoomans/releases). Find
-`game.unx` from your Cook, Serve, Delicious! installation. Under Windows
-`game.unx` can usually be found at one of these or similar locations:
+`data.win` from your Cook, Serve, Delicious! installation (under Linux it's `game.unx`).
+Under Windows `data.win` can usually be found at one of these or similar locations:
 
 ```
-C:\Program Files\Steam\steamapps\common\CookServeDelicious\assets\game.unx
-C:\Program Files (x86)\Steam\steamapps\common\CookServeDelicious\assets\game.unx
+C:\Program Files\Steam\steamapps\common\CookServeDelicious\data.win
+C:\Program Files (x86)\Steam\steamapps\common\CookServeDelicious\data.win
 ```
 
 Under Linux it would be:
@@ -36,14 +36,15 @@ I don't have a Mac so I don't know where it's there and I can't provide a binary
 for Mac anyway. (I don't use Windows either, but it is easily possible to cross
 compile for Windows under Linux.)
 
-**Make a backup of `game.unx`!** `cook_serve_hoomans.exe` will patch `game.unx`.
+**Make a backup of `data.win`!** `cook_serve_hoomans.exe` will patch `data.win`.
 It might (but shouldn't) corrupt the game, so please make a backup first! If
-you have patched `game.unx` once already copy the backup back into the assets
-folder before patching. Otherwise patching might fail if the new replacement
-sprite image is bigger than the old (the replacement sprite should still be
-smaller than the original image, that's why restoring the backup is needed).
+you have patched `data.win` once already copy the backup back into the
+CookServeDelicious folder before patching. Otherwise patching might fail if the
+new replacement sprite image is bigger than the old (the replacement sprite
+should still be smaller than the original image, that's why restoring the backup
+is needed).
 
-Then simply drag and drop `game.unx` onto `cook_serve_hoomans.exe`:
+Then simply drag and drop `data.win` onto `cook_serve_hoomans.exe`:
 
 ![](http://i.imgur.com/6FMEtPd.png)
 
@@ -57,8 +58,8 @@ Advanced Usage
 --------------
 
 For advanced users there is a second binary called `quick_patch.exe`. You can
-use this to patch `game.unx` witch your own customer and/or icon sprites. Just
-do the same as under [Setup](#setup), but drop `game.unx`, `hoomans.png` and
+use this to patch `data.win` witch your own customer and/or icon sprites. Just
+do the same as under [Setup](#setup), but drop `data.win`, `hoomans.png` and
 `icons.png` all together onto `quick_patch.exe`. It is important that the files
 are named like this so the program knows what to do with which file.
 
@@ -94,7 +95,7 @@ How It Works
 Cook, Serve, Delicious! uses [Game Maker](http://www.yoyogames.com/studio) from
 YoYo Games. I didn't bother to reverse engineer the archive file format of this
 game engine, but instead I just used [another program](https://github.com/panzi/mediaextract)
-I once wrote to extract all the PNG images contained in the `game.unx` archive
+I once wrote to extract all the PNG images contained in the `data.win` archive
 file. I just guessed that this game uses PNGs and I guessed right. I quickly
 found the image containing all the customer sprites.
 

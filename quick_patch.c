@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 	size_t hoomans_len = 0;
 
 	if (argc < 3) {
-		fprintf(stderr, "*** ERROR: Please pass game.unx, hoomans.png and/or icons.png to this program.\n");
+		fprintf(stderr, "*** ERROR: Please pass %s, hoomans.png and/or icons.png to this program.\n", CSH_GAME_ARCHIVE);
 		goto error;
 	}
 
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 		const char *path = argv[i];
 		const char *name = filename(path);
 
-		if (strcasecmp(name, "game.unx") == 0) {
+		if (strcasecmp(name, "game.unx") == 0 || strcasecmp(name, "data.win") == 0) {
 			game_filename = path;
 		}
 		else if (strcasecmp(name, "hoomans.png") == 0) {
@@ -122,14 +122,14 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			fprintf(stderr, "*** ERROR: Don't know what to do with a file named '%s'.\n"
-							"           Please pass files named game.unx, hoomans.png and/or icons.png to this program.\n",
-							name);
+							"           Please pass files named %s, hoomans.png and/or icons.png to this program.\n",
+							name, CSH_GAME_ARCHIVE);
 			goto error;
 		}
 	}
 
 	if (!game_filename || (!icons_filename && !hoomans_filename)) {
-		fprintf(stderr, "*** ERROR: please pass game.unx, hoomans.png and/or icons.png to this program.\n");
+		fprintf(stderr, "*** ERROR: please pass %s, hoomans.png and/or icons.png to this program.\n", CSH_GAME_ARCHIVE);
 		goto error;
 	}
 

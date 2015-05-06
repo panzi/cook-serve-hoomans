@@ -2,6 +2,12 @@
 #define COOK_SERVE_HOOMANS_H
 #pragma once
 
+#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#	define CSH_GAME_ARCHIVE "data.win"
+#else
+#	define CSH_GAME_ARCHIVE "game.unx"
+#endif
+
 #define CSH_ICONS_OFFSET 0x035c3000
 #define CSH_ICONS_WIDTH  2048
 #define CSH_ICONS_HEIGHT 2048
