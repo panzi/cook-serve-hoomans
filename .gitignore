@@ -3,6 +3,7 @@
 *.o
 *.exe
 *.unx
+*.win
 *.zip
 cook_serve_hoomans
 quick_patch
