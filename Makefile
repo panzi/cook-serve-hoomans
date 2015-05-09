@@ -1,4 +1,6 @@
 CC=gcc
+POSTERIZE=posterize
+CONVERT=convert
 XXD=xxd
 BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
@@ -69,7 +71,23 @@ $(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(CSH_OBJ)
 $(BUILDDIR)/quick_patch$(BINEXT): $(QP_OBJ)
 	$(CC) $(ARCH_FLAGS) $(QP_OBJ) -o $@
 
-clean:
+hoomans.png: opt/hoomans_opt.png
+	$(CONVERT) $< \
+		-define png:compression-filter=5 \
+		-define png:compression-level=9 \
+		-define png:compression-strategy=3 $@
+
+opt/hoomans_opt.png: hoomans_post.png opt/Makefile
+	$(MAKE) -C opt
+
+opt/Makefile: opt/configure.sh
+	cd opt; ./configure.sh
+
+hoomans_post.png: hoomans_src.png
+	$(POSTERIZE) 255 $< $@
+
+clean: opt/Makefile
+	$(MAKE) -C opt clean
 	rm -f \
 		$(BUILDDIR)/hoomans_png.c \
 		$(BUILDDIR)/icons_png.c \
@@ -79,4 +97,6 @@ clean:
 		$(BUILDDIR)/hoomans_png.o \
 		$(BUILDDIR)/icons_png.o \
 		$(BUILDDIR)/cook_serve_hoomans$(BINEXT) \
-		$(BUILDDIR)/quick_patch$(BINEXT)
+		$(BUILDDIR)/quick_patch$(BINEXT) \
+		hoomans_post.png \
+		hoomans.png

@@ -8,3 +8,8 @@
 cook_serve_hoomans
 quick_patch
 hoomans_png.h
+hoomans_post.png
+hoomans.png
+opt/Makefile
+opt/*.png
+opt/tmp
