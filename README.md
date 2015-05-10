@@ -71,9 +71,9 @@ Advanced Usage
 
 For advanced users there is a second binary called `quick_patch.exe`. You can
 use this to patch `data.win` witch your own customer and/or icon sprites. Just
-do the same as under [Setup](#setup), but drop `data.win`, `hoomans.png` and
-`icons.png` all together onto `quick_patch.exe`. It is important that the files
-are named like this so the program knows what to do with which file.
+drop `data.win`, `hoomans.png` and `icons.png` all together onto
+`quick_patch.exe`. It is important that the files are named like this so the
+program knows what to do with which file.
 
 Build From Source
 -----------------
@@ -104,6 +104,12 @@ make TARGET=win64
 
 Always make sure that the folder `build/$TARGET` exists before you run `make`.
 You can do this simply by running `make TARGET=$TARGET setup`.
+
+Finally you can run the patch by typing:
+
+```
+make patch
+```
 
 How It Works
 ------------
