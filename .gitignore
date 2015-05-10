@@ -14,3 +14,4 @@ hoomans.png
 opt/Makefile
 opt/*.png
 opt/tmp
+build/*
