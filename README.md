@@ -122,14 +122,13 @@ file. I just guessed that this game uses PNGs and I guessed right. I quickly
 found the image containing all the customer sprites.
 
 Now how do I replace this image without understanding the archive format? I just
-edited the image (inserted a bad picture of myself as a test, a better picture
-will follow) and wrote it over the existing image in the archive file. This is
-only possible if the new image has the same or a smaller file size than the old
-one. Otherwise other proportions of the archive would be overwritten and the
-archive would be corrupted. Luckily the original image seems to be not very well
-compressed and I could generate a replacement image that is smaller even though
-it contains more detail (in general photos have more details than cartoon
-characters and thus compress not so well).
+edited the image (inserted a pictures of the hoomans) and wrote it over the
+existing image in the archive file. This is only possible if the new image has
+the same or a smaller file size than the old one. Otherwise other proportions of
+the archive would be overwritten and it would be corrupted. Luckily the original
+image seems to be not very well compressed and I could generate a replacement
+image that is smaller even though it contains more detail (in general photos
+have more details than cartoon characters and thus compress not so well).
 
 This means that this patch will stop working if there is an update that changes
 the offset of the image or reduces it's size too much. Then I will have to
