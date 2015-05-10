@@ -4,6 +4,7 @@
 *.exe
 *.unx
 *.win
+*.backup
 *.zip
 cook_serve_hoomans
 quick_patch

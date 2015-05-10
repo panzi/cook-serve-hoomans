@@ -241,7 +241,7 @@ int parse_png_info(FILE *file, struct png_info *info) {
 
 int patch_game(FILE *file, off_t offset, const unsigned char *data, size_t size, size_t width, size_t height) {
 	if (fseeko(file, offset, SEEK_SET) != 0) {
-		perror("seeking to offset of image");
+		perror("*** ERROR: seeking to offset of image");
 		return -1;
 	}
 
@@ -270,19 +270,19 @@ int patch_game(FILE *file, off_t offset, const unsigned char *data, size_t size,
 
 	// parse_png changed file position
 	if (fseeko(file, offset, SEEK_SET) != 0) {
-		perror("seeking to offset of image");
+		perror("*** ERROR: seeking to offset of image");
 		return -1;
 	}
 
 	if (fwrite(data, size, 1, file) != 1) {
-		perror("patching game");
+		perror("*** ERROR: patching game");
 		return -1;
 	}
 
 	// zero padding
 	for (; size < info.filesize; ++ size) {
 		if (fwrite("", 1, 1, file) != 1) {
-			perror("patching game");
+			perror("*** ERROR: patching game");
 			return -1;
 		}
 	}
