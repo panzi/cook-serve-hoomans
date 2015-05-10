@@ -22,6 +22,8 @@ everything went well you should see something like this:
 
 ![](http://i.imgur.com/xLfBnH0.png)
 
+Just press enter and you are done.
+
 This patch always needs the original game archive (a file called `data.win` under
 Windows and `game.unx` under Linux) and not an already patched one, otherwise
 patching might fail. Therefore it automatically creates a backup called
@@ -30,7 +32,9 @@ second time it will look for that backup file and restore it before patching. If
 you want to get rid of the mod simply delete `data.win` and rename
 `data.win.backup` to `data.win`.
 
-In case `cook_serve_hoomans.exe` does not automatically find the game archive
+### In case taht didn't work
+
+In case `cook_serve_hoomans.exe` couldn't automatically find the game archive
 file you can pass it manually. First find `data.win` from your Cook, Serve,
 Delicious! installation. Under Windows `data.win` can usually be found at one of
 these or similar locations:
@@ -59,8 +63,8 @@ If everything went well you should see this:
 
 ![](http://i.imgur.com/akcgTv9.png)
 
-In case you have already used `cook_serve_hoomans.exe` v7 or newer it will detect
-the automatically created backup and restor it before applying the patch:
+In case you used `cook_serve_hoomans.exe` v7 or newer before it will detect the
+previously created backup and restors it before applying the patch:
 
 ![](http://i.imgur.com/W7QGslM.png)
 
