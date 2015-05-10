@@ -36,21 +36,25 @@ I don't have a Mac so I don't know where it's there and I can't provide a binary
 for Mac anyway. (I don't use Windows either, but it is easily possible to cross
 compile for Windows under Linux.)
 
-**Make a backup of `data.win`!** `cook_serve_hoomans.exe` will patch `data.win`.
-It might (but shouldn't) corrupt the game, so please make a backup first! If
-you have patched `data.win` once already copy the backup back into the
-CookServeDelicious folder before patching. Otherwise patching might fail if the
-new replacement sprite image is bigger than the old (the replacement sprite
-should still be smaller than the original image, that's why restoring the backup
-is needed).
+`cook_serve_hoomans.exe` will patch `data.win`. It needs the original `data.win`
+and not an already patched one, otherwise patching might fail. Therefore it
+automatically creates a backup called `data.win.backup` in the same directory.
+When `cook_serve_hoomans.exe` is run a second time it will look for that
+backup file and restore it before patching. If you want to get rid of the mod
+simply delete `data.win` and rename `data.win.backup` to `data.win`.
 
 Then simply drag and drop `data.win` onto `cook_serve_hoomans.exe`:
 
-![](http://i.imgur.com/6FMEtPd.png)
+![](http://i.imgur.com/XVC4YIn.png)
 
 If everything went well you should see this:
 
-![](http://i.imgur.com/KJ1bFIg.png)
+![](http://i.imgur.com/akcgTv9.png)
+
+In case you have already used `cook_serve_hooman.exe` v7 or newer it will detect
+the automatically created backup and restor it before applying the patch:
+
+![](http://i.imgur.com/W7QGslM.png)
 
 Just press enter and you are done.
 
