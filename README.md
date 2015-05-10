@@ -32,7 +32,7 @@ second time it will look for that backup file and restore it before patching. If
 you want to get rid of the mod simply delete `data.win` and rename
 `data.win.backup` to `data.win`.
 
-### In case taht didn't work
+### In case that didn't work
 
 In case `cook_serve_hoomans.exe` couldn't automatically find the game archive
 file you can pass it manually. First find `data.win` from your Cook, Serve,
