@@ -20,7 +20,7 @@ and double click `cook_serve_hoomans.exe`. It should automatically find the
 installation path of Cook, Serve, Delicious! and patch the game archive. If
 everything went well you should see something like this:
 
-![](http://i.imgur.com/Lzm78hM.png)
+![](http://i.imgur.com/xLfBnH0.png)
 
 This patch always needs the original game archive (a file called `data.win` under
 Windows and `game.unx` under Linux) and not an already patched one, otherwise
