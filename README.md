@@ -15,10 +15,25 @@ would also be nice.
 Setup
 -----
 
-Download the latest release from the
-[releases page](https://github.com/panzi/cook-serve-hoomans/releases). Find
-`data.win` from your Cook, Serve, Delicious! installation (under Linux it's `game.unx`).
-Under Windows `data.win` can usually be found at one of these or similar locations:
+Download the latest release from the [releases page](https://github.com/panzi/cook-serve-hoomans/releases)
+and double click `cook_serve_hoomans.exe`. It should automatically find the
+installation path of Cook, Serve, Delicious! and patch the game archive. If
+everything went well you should see something like this:
+
+![](http://i.imgur.com/Lzm78hM.png)
+
+This patch always needs the original game archive (a file called `data.win` under
+Windows and `game.unx` under Linux) and not an already patched one, otherwise
+patching might fail. Therefore it automatically creates a backup called
+`data.win.backup` in the same directory. When `cook_serve_hoomans.exe` is run a
+second time it will look for that backup file and restore it before patching. If
+you want to get rid of the mod simply delete `data.win` and rename
+`data.win.backup` to `data.win`.
+
+In case `cook_serve_hoomans.exe` does not automatically find the game archive
+file you can pass it manually. First find `data.win` from your Cook, Serve,
+Delicious! installation. Under Windows `data.win` can usually be found at one of
+these or similar locations:
 
 ```
 C:\Program Files\Steam\steamapps\common\CookServeDelicious\data.win
@@ -34,14 +49,7 @@ Under Linux it would be:
 
 I don't have a Mac so I don't know where it's there and I can't provide a binary
 for Mac anyway. (I don't use Windows either, but it is easily possible to cross
-compile for Windows under Linux.)
-
-`cook_serve_hoomans.exe` will patch `data.win`. It needs the original `data.win`
-and not an already patched one, otherwise patching might fail. Therefore it
-automatically creates a backup called `data.win.backup` in the same directory.
-When `cook_serve_hoomans.exe` is run a second time it will look for that
-backup file and restore it before patching. If you want to get rid of the mod
-simply delete `data.win` and rename `data.win.backup` to `data.win`.
+compile a Windows binary under Linux.)
 
 Then simply drag and drop `data.win` onto `cook_serve_hoomans.exe`:
 
@@ -51,7 +59,7 @@ If everything went well you should see this:
 
 ![](http://i.imgur.com/akcgTv9.png)
 
-In case you have already used `cook_serve_hooman.exe` v7 or newer it will detect
+In case you have already used `cook_serve_hoomans.exe` v7 or newer it will detect
 the automatically created backup and restor it before applying the patch:
 
 ![](http://i.imgur.com/W7QGslM.png)

@@ -53,8 +53,8 @@ quick_patch: $(BUILDDIR)/quick_patch$(BINEXT)
 setup:
 	mkdir -p $(BUILDDIR)
 
-patch: quick_patch hoomans.png icons.png
-	$(BUILDDIR)/quick_patch$(BINEXT) $(CSD_DIR)/assets/game.unx hoomans.png icons.png
+patch: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
+	$<
 
 $(BUILDDIR)/%_png.c: %.png
 	$(XXD) -i $< > $@

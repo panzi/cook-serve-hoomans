@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <limits.h>
 
 extern unsigned char hoomans_png[];
 extern unsigned int hoomans_png_len;
@@ -19,7 +20,74 @@ extern unsigned int hoomans_png_len;
 extern unsigned char icons_png[];
 extern unsigned int icons_png_len;
 
-int copyfile(const char *src, const char *dst) {
+#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#	include <windows.h>
+
+int find_archive(char *path, size_t pathlen) {
+	HKEY hKey = 0;
+	DWORD dwType = REG_SZ;
+	DWORD dwSize = pathlen;
+
+	if (pathlen < 46) {
+		return -1;
+	}
+
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Software\\Valve\\Steam", 0, KEY_QUERY_VALUE, &hKey) != ERROR_SUCCESS) {
+		return -1;
+	}
+
+	if (RegQueryValueEx(hKey, TEXT("InstallPath"), NULL, &dwType, (LPBYTE)path, &dwSize) != ERROR_SUCCESS) {
+		return -1;
+	}
+
+	if (dwType != REG_SZ || dwSize > pathlen - 46) {
+		return -1;
+	}
+
+	strcat(path, "\\steamapps\\common\\CookServeDelicious\\data.win");
+
+	return 0;
+}
+#else
+int find_archive(char *path, size_t pathlen) {
+	static const char *paths[] = {
+		"/.local/share/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		"/.local/share/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		"/.local/share/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		"/.local/share/steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		"/.steam/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		"/.steam/steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		"/.steam/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		"/.steam/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		NULL
+	};
+	const char *home = getenv("HOME");
+	struct stat info;
+
+	if (!home) {
+		return -1;
+	}
+
+	for (const char **ptr = paths; *ptr; ++ ptr) {
+		if (snprintf(path, pathlen, "%s%s", home, *ptr) < 0) {
+			return -1;
+		}
+
+		if (stat(path, &info) < 0) {
+			if (errno != ENOENT) {
+				perror(path);
+			}
+		}
+		else if (S_ISREG(info.st_mode)) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+#endif
+
+static int copyfile(const char *src, const char *dst) {
 	char buf[BUFSIZ];
 	FILE *fsrc = NULL;
 	FILE *fdst = NULL;
@@ -71,7 +139,7 @@ end:
 	return status;
 }
 
-const char *prompt(const char *msg, const char *defval, char *buf, size_t bufsize) {
+static const char *prompt(const char *msg, const char *defval, char *buf, size_t bufsize) {
 	printf("%s", msg);
 
 	if (!fgets(buf, bufsize, stdin)) {
@@ -95,7 +163,7 @@ const char *prompt(const char *msg, const char *defval, char *buf, size_t bufsiz
 	return ptr;
 }
 
-int prompt_yes_no(const char *msg, bool defval) {
+static int prompt_yes_no(const char *msg, bool defval) {
 	char buf[BUFSIZ];
 
 	for (;;) {
@@ -118,6 +186,7 @@ int prompt_yes_no(const char *msg, bool defval) {
 }
 
 int main(int argc, char *argv[]) {
+	char game_name_buf[PATH_MAX];
 	FILE *game = NULL;
 	int status = EXIT_SUCCESS;
 	const char *game_name = NULL;
@@ -126,12 +195,22 @@ int main(int argc, char *argv[]) {
 	struct stat backup_stat;
 	size_t backup_name_len = 0;
 
-	if (argc != 2) {
-		fprintf(stderr, "*** ERROR: please pass the %s file to this program.\n", CSH_GAME_ARCHIVE);
+	if (argc > 2) {
+		fprintf(stderr, "*** ERROR: Please pass the %s file to this program.\n", CSH_GAME_ARCHIVE);
 		goto error;
 	}
+	else if (argc == 2) {
+		game_name = argv[1];
+	}
+	else {
+		if (find_archive(game_name_buf, PATH_MAX) < 0) {
+			fprintf(stderr, "*** ERROR: Couldn't find %s file.\n", CSH_GAME_ARCHIVE);
+			goto error;
+		}
+		game_name = game_name_buf;
+		printf("Patching game archive: %s\n", game_name);
+	}
 
-	game_name = argv[1];
 	backup_name_len = strlen(game_name) + 8;
 	backup_name = calloc(backup_name_len, 1);
 	if (!backup_name) {
