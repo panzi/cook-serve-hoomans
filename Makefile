@@ -70,7 +70,7 @@ $(BUILDDIR)/%.o: $(BUILDDIR)/%.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/cook_serve_hoomans.o: cook_serve_hoomans.c $(BUILDDIR)/hoomans_png.h $(BUILDDIR)/icons_png.h
-	$(CC) $(ARCH_FLAGS) $(CFLAGS) cook_serve_hoomans.c -o $@
+	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c cook_serve_hoomans.c -o $@
 
 $(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(CSH_OBJ)
 	$(CC) $(ARCH_FLAGS) $(CSH_OBJ) -o $@
