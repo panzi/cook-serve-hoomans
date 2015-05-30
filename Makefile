@@ -4,10 +4,11 @@ CONVERT=convert
 XXD=xxd
 BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
-COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu99 -O2
+BUILDDIR=build/$(TARGET)
+INCLUDE=-I$(BUILDDIR)
+COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 -O2 $(INCLUDE)
 POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic
 CFLAGS=$(COMMON_CFLAGS)
-BUILDDIR=build/$(TARGET)
 STEAMDIR=~/.steam/steam
 CSD_DIR=$(STEAMDIR)/SteamApps/common/CookServeDelicious
 ARCH_FLAGS=
@@ -59,11 +60,17 @@ patch: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
 $(BUILDDIR)/%_png.c: %.png
 	$(XXD) -i $< > $@
 
+$(BUILDDIR)/%_png.h: %.png ./mkheader.sh
+	./mkheader.sh $< $@
+
 $(BUILDDIR)/%.o: %.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/%.o: $(BUILDDIR)/%.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILDDIR)/cook_serve_hoomans.o: cook_serve_hoomans.c $(BUILDDIR)/hoomans_png.h $(BUILDDIR)/icons_png.h
+	$(CC) $(ARCH_FLAGS) $(CFLAGS) cook_serve_hoomans.c -o $@
 
 $(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(CSH_OBJ)
 	$(CC) $(ARCH_FLAGS) $(CSH_OBJ) -o $@
@@ -89,7 +96,9 @@ hoomans_post.png: hoomans_src.png
 clean: opt/Makefile
 	$(MAKE) -C opt clean
 	rm -f \
+		$(BUILDDIR)/hoomans_png.h \
 		$(BUILDDIR)/hoomans_png.c \
+		$(BUILDDIR)/icons_png.h \
 		$(BUILDDIR)/icons_png.c \
 		$(BUILDDIR)/patch_game.o \
 		$(BUILDDIR)/cook_serve_hoomans.o \

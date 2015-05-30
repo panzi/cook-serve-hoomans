@@ -1,5 +1,7 @@
 #include "patch_game.h"
 #include "cook_serve_hoomans.h"
+#include "hoomans_png.h"
+#include "icons_png.h"
 
 #include <utime.h>
 #include <strings.h>
@@ -13,12 +15,14 @@
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
+#include <assert.h>
 
-extern unsigned char hoomans_png[];
-extern unsigned int hoomans_png_len;
+#ifndef static_assert
+#	define static_assert _Static_assert
+#endif
 
-extern unsigned char icons_png[];
-extern unsigned int icons_png_len;
+#define _STR(X) #X
+#define STR(X) _STR(X)
 
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
 #	include <windows.h>
@@ -186,6 +190,14 @@ static int prompt_yes_no(const char *msg, bool defval) {
 }
 
 int main(int argc, char *argv[]) {
+	static_assert(ICONS_PNG_LEN <= CSH_ICONS_SIZE,
+		"icons.png must be <= " STR(CSH_ICONS_SIZE) " bytes but is "
+		STR(ICONS_PNG_LEN) " bytes");
+
+	static_assert(HOOMANS_PNG_LEN <= CSH_HOOMANS_SIZE,
+		"hoomans.png must be <= " STR(CSH_HOOMANS_SIZE) " bytes but is "
+		STR(HOOMANS_PNG_LEN) " bytes");
+
 	char game_name_buf[PATH_MAX];
 	FILE *game = NULL;
 	int status = EXIT_SUCCESS;
