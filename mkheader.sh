@@ -12,8 +12,8 @@ cat > "$hdr" << EOF
 #pragma once
 
 #define ${mac}_LEN ${size}
-extern unsigned char ${sym}[];
-extern unsigned int ${sym}_len;
+extern const unsigned char ${sym}[];
+extern const unsigned int ${sym}_len;
 
 #endif
 EOF

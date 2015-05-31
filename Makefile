@@ -6,7 +6,7 @@ BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
 BUILDDIR=build/$(TARGET)
 INCLUDE=-I$(BUILDDIR)
-COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 -O2 $(INCLUDE) -fdiagnostics-color -g
+COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 $(INCLUDE) -fdiagnostics-color -g
 POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic
 CFLAGS=$(COMMON_CFLAGS)
 STEAMDIR=~/.steam/steam
@@ -89,7 +89,10 @@ $(BUILDDIR)/quick_patch$(BINEXT): $(QP_OBJ)
 $(BUILDDIR)/gmdump$(BINEXT): $(DMP_OBJ)
 	$(CC) $(ARCH_FLAGS) $(DMP_OBJ) -o $@
 
-hoomans.png: opt/hoomans_opt.png
+#hoomans.png: opt/hoomans_opt.png
+#	cp $< $@
+
+hoomans.png: hoomans_src.png
 	cp $< $@
 
 opt/hoomans_opt.png: hoomans_post.png opt/Makefile

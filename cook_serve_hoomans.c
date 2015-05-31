@@ -350,8 +350,13 @@ end:
 #else
 
 int main(int argc, char *argv[]) {
+	struct gm_patch patches[] = {
+		GM_PATCH_TXTR(CSH_ICONS_INDEX,   icons_png,   icons_png_len,   CSH_ICONS_WIDTH,   CSH_ICONS_HEIGHT),
+		GM_PATCH_TXTR(CSH_HOOMANS_INDEX, hoomans_png, hoomans_png_len, CSH_HOOMANS_WIDTH, CSH_HOOMANS_HEIGHT),
+		GM_PATCH_END
+	};
+
 	char game_name_buf[PATH_MAX];
-	FILE *game = NULL;
 	int status = EXIT_SUCCESS;
 	const char *game_name = NULL;
 
@@ -371,16 +376,18 @@ int main(int argc, char *argv[]) {
 		printf("Patching game archive: %s\n", game_name);
 	}
 
+	// TODO: backup etc.
+	if (gm_patch_archive(game_name, patches) != 0) {
+		fprintf(stderr, "*** ERROR: Error patching archive: %s\n", strerror(errno));
+		goto error;
+	}
 	
+	printf("Successfully pached game.\n");
 
 	goto end;
 
 error:
 	status = EXIT_FAILURE;
-	if (game) {
-		fclose(game);
-		game = NULL;
-	}
 
 end:
 

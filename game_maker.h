@@ -64,6 +64,15 @@ struct gm_patch {
 	} meta;
 };
 
+#define GM_PATCH_TXTR(INDEX, DATA, SIZE, WIDTH, HEIGHT) \
+	{ GM_TXTR, (INDEX), GM_PNG, (DATA), (SIZE), { .txtr = { (WIDTH), (HEIGHT) } } }
+
+#define GM_PATCH_AUDO(INDEX, DATA, SIZE, TYPE) \
+	{ GM_AUDO, (INDEX), (TYPE), (DATA), (SIZE), { .txtr = { 0, 0 } } }
+
+#define GM_PATCH_END \
+	{ GM_END, 0, GM_UNKNOWN, NULL, 0, { .txtr = { 0, 0 } } }
+
 struct gm_entry {
 	off_t            offset;
 	size_t           size;
@@ -108,9 +117,10 @@ struct gm_patched_index {
 };
 
 struct gm_patched_index *gm_get_section(struct gm_patched_index *patched, enum gm_section section);
-int                      gm_shift_tail(struct gm_patched_index *index, off_t offset);
+size_t                   gm_index_length(const struct gm_index *index);
+int                      gm_patch_archive(const char *filename, struct gm_patch *patches);
 int                      gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch);
-void                     gm_free_index(struct gm_index *index);
+int                      gm_shift_tail(struct gm_patched_index *index, off_t offset);
 void                     gm_free_patched_index(struct gm_patched_index *index);
 const char              *gm_section_name(enum gm_section section);
 const char              *gm_extension(enum gm_filetype type);
@@ -119,10 +129,9 @@ enum gm_section          gm_parse_section(const uint8_t *magic);
 int                      gm_read_index_txtr(FILE *game, struct gm_index *section);
 int                      gm_read_index_audo(FILE *game, struct gm_index *section);
 struct gm_index         *gm_read_index(FILE *game);
+void                     gm_free_index(struct gm_index *index);
 size_t                   gm_form_size(const struct gm_patched_index *index);
 int                      gm_write_hdr(FILE *fp, const uint8_t *magic, size_t size);
-size_t                   gm_index_length(const struct gm_index *index);
-int                      gm_patch_archive(const char *filename, struct gm_patch *patches);
 int                      gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir);
 
 #ifdef __cplusplus

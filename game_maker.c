@@ -19,11 +19,16 @@
 	(BUF)[3] = ((uint32_t)(N) >> 24) & 0xFF; \
 }
 
-#define LOG_ERR(FMT, ...) fprintf(stderr, "*** Error: " FMT "\n", ## __VA_ARGS__)
-#define LOG_ERR_MSG(MSG)  fprintf(stderr, "*** Error: " MSG "\n")
+#define LOG_ERR(FMT, ...) fprintf(stderr, "*** ERROR: " FMT "\n", ## __VA_ARGS__)
+#define LOG_ERR_MSG(MSG)  fprintf(stderr, "*** ERROR: " MSG "\n")
 
 static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t size) {
 	uint8_t buf[BUFSIZ];
+
+	if (src == dst) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (fseeko(src, srcoff, SEEK_SET) != 0) {
 		return -1;
@@ -36,6 +41,10 @@ static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t siz
 	while (size > 0) {
 		size_t chunk_size = size >= BUFSIZ ? BUFSIZ : size;
 		if (fread(buf, chunk_size, 1, src) != 1) {
+			if (!ferror(src)) {
+				LOG_ERR_MSG("unexpected end of file while copying file data");
+				errno = EINVAL;
+			}
 			return -1;
 		}
 		if (fwrite(buf, chunk_size, 1, dst) != 1) {
@@ -51,11 +60,20 @@ static int mkdirs(const char *pathname, mode_t mode) {
 	char buf[PATH_MAX];
 	struct stat st;
 
-	if (!pathname || !*pathname) {
-		LOG_ERR("illegal pathname: %s", pathname);
+	if (!pathname) {
+		LOG_ERR_MSG("pathname cannot be NULL");
+
 		errno = EINVAL;
 		return -1;
 	}
+	
+	if (!*pathname) {
+		LOG_ERR_MSG("pathname cannot be empty");
+
+		errno = EINVAL;
+		return -1;
+	}
+
 
 	if (snprintf(buf, sizeof(buf), "%s", pathname) < 0) {
 		return -1;
@@ -79,16 +97,15 @@ static int mkdirs(const char *pathname, mode_t mode) {
 			if (stat(buf, &st) == 0) {
 				if (!S_ISDIR(st.st_mode)) {
 					LOG_ERR("exists but is not a directory: %s", buf);
+
 					errno = ENOTDIR;
 					return -1;
 				}
 			}
 			else if (errno != ENOENT) {
-				LOG_ERR("%s: %s", buf, strerror(errno));
 				return -1;
 			}
 			else if (mkdir(buf, mode) != 0) {
-				LOG_ERR("%s: %s", buf, strerror(errno));
 				return -1;
 			}
 #ifdef GM_WINDOWS
@@ -133,6 +150,7 @@ int gm_shift_tail(struct gm_patched_index *index, off_t offset) {
 
 		default:
 			LOG_ERR("can't move %s section (not implemented)", gm_section_name(index->section));
+
 			errno = ENOSYS;
 			return -1;
 		}
@@ -323,8 +341,8 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 
 		const uint32_t value = U32LE_FROM_BUF(buffer);
 		if (value != 1) {
-			LOG_ERR("section %s, entry %" PRIuPTR " unexpected value of non-reverse engineered field: value = %" PRIu32,
-				gm_section_name(section->section), index, value);
+			LOG_ERR("at offset %" PRIiPTR ", section %s, entry %" PRIuPTR ": unexpected value of non-reverse engineered field: value = %" PRIu32,
+				info_offsets[index], gm_section_name(section->section), index, value);
 
 			errno = ENOSYS;
 			goto error;
@@ -498,7 +516,7 @@ struct gm_index *gm_read_index(FILE *game) {
 				buffer[0], buffer[1], buffer[2], buffer[3],
 				buffer[0], buffer[1], buffer[2], buffer[3]);
 
-			errno = EINVAL;
+			errno = ENOSYS;
 			goto error;
 		}
 
@@ -583,7 +601,7 @@ int gm_write_hdr(FILE *fp, const uint8_t *magic, size_t size) {
 	if (size > UINT32_MAX) {
 		LOG_ERR("section size out of range: size = %" PRIuPTR ", max size = %" PRIu32, size, UINT32_MAX);
 
-		errno = ERANGE;
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -631,7 +649,7 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 
 	// build patch index
 	const size_t count = gm_index_length(index);
-	patched = calloc(count, sizeof(struct gm_patched_index));
+	patched = calloc(count + 1, sizeof(struct gm_patched_index));
 	if (!patched) {
 		goto error;
 	}
@@ -657,6 +675,7 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 		patched[i].entries     = entries;
 		patched[i].index       = &index[i];
 	}
+	patched[count].section = GM_END;
 
 	// adjust patch index
 	for (struct gm_patch *ptr = patches; ptr->section != GM_END; ++ ptr) {
@@ -669,6 +688,8 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 		}
 
 		if (gm_patch_entry(section, ptr) != 0) {
+			LOG_ERR("applying patch for section %s, entry %" PRIuPTR " failed",
+				gm_section_name(ptr->section), ptr->index);
 			goto error;
 		}
 	}
@@ -697,41 +718,41 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 
 		switch (ptr->section) {
 		case GM_TXTR:
+		{
 			WRITE_U32LE(buffer, ptr->entry_count);
 			if (fwrite(buffer, 4, 1, tmp) != 1) {
 				goto error;
 			}
-			{
-				const uint32_t fileinfo_offset = (uint32_t)ptr->offset + 12 + 4 * ptr->entry_count;
-				for (size_t i = 0; i < ptr->entry_count; ++ i) {
-					WRITE_U32LE(buffer, fileinfo_offset + i * 4);
-					if (fwrite(buffer, 4, 1, tmp) != 1) {
+			const uint32_t fileinfo_offset = (uint32_t)ptr->offset + 12 + 4 * ptr->entry_count;
+			for (size_t i = 0; i < ptr->entry_count; ++ i) {
+				WRITE_U32LE(buffer, fileinfo_offset + i * 8);
+				if (fwrite(buffer, 4, 1, tmp) != 1) {
+					goto error;
+				}
+			}
+			for (size_t i = 0; i < ptr->entry_count; ++ i) {
+				WRITE_U32LE(buffer, 1);
+				WRITE_U32LE(buffer + 4, ptr->entries[i].offset);
+				if (fwrite(buffer, 8, 1, tmp) != 1) {
+					goto error;
+				}
+			}
+			for (size_t i = 0; i < ptr->entry_count; ++ i) {
+				struct gm_patched_entry *entry = &ptr->entries[i];
+				if (entry->patch) {
+					if (fseeko(tmp, entry->offset, SEEK_SET) != 0) {
+						goto error;
+					}
+					if (fwrite(entry->patch->data, entry->patch->size, 1, tmp) != 1) {
 						goto error;
 					}
 				}
-				for (size_t i = 0; i < ptr->entry_count; ++ i) {
-					WRITE_U32LE(buffer, 1);
-					WRITE_U32LE(buffer + 4, ptr->entries[i].offset);
-					if (fwrite(buffer, 8, 1, tmp) != 1) {
-						goto error;
-					}
+				else if (copydata(game, entry->entry->offset, tmp, entry->offset, entry->size) != 0) {
+					goto error;
 				}
-				for (size_t i = 0; i < ptr->entry_count; ++ i) {
-					struct gm_patched_entry *entry = &ptr->entries[i];
-					if (entry->patch) {
-						if (fseeko(tmp, entry->offset, SEEK_SET) != 0) {
-							goto error;
-						}
-						if (fwrite(entry->patch->data, entry->patch->size, 1, tmp) != 1) {
-							goto error;
-						}
-					}
-					else if (copydata(game, entry->entry->offset, tmp, entry->offset, entry->size) != 0) {
-						goto error;
-					}
-				}			
 			}
 			break;
+		}
 
 		case GM_AUDO:
 			WRITE_U32LE(buffer, ptr->entry_count);
@@ -739,7 +760,8 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 				goto error;
 			}
 			for (size_t i = 0; i < ptr->entry_count; ++ i) {
-				WRITE_U32LE(buffer, ptr->entries[i].offset);
+				uint32_t offset = ptr->entries[i].offset - 4;
+				WRITE_U32LE(buffer, offset);
 				if (fwrite(buffer, 4, 1, tmp) != 1) {
 					goto error;
 				}
@@ -765,7 +787,7 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 			break;
 
 		default:
-			if (copydata(game, ptr->index->offset, tmp, ptr->offset, ptr->size) != 0) {
+			if (copydata(game, ptr->index->offset, tmp, ptr->offset, ptr->size + 8) != 0) {
 				goto error;
 			}
 		}
@@ -867,6 +889,8 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 			             outdir, GM_PATH_SEP, dir, GM_PATH_SEP, i, gm_extension(entry->type)) < 0) {
 				return -1;
 			}
+
+			puts(buf);
 
 			FILE *fp = fopen(buf, "wb");
 			if (!fp) {
