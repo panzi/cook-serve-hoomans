@@ -6,7 +6,7 @@ BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
 BUILDDIR=build/$(TARGET)
 INCLUDE=-I$(BUILDDIR)
-COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 -O2 $(INCLUDE)
+COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 -O2 $(INCLUDE) -fdiagnostics-color
 POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic
 CFLAGS=$(COMMON_CFLAGS)
 STEAMDIR=~/.steam/steam

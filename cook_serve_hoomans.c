@@ -348,6 +348,31 @@ end:
 }
 #else
 
+int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t size) {
+	char buf[BUFSIZ];
+
+	if (fseeko(src, srcoff, SEEK_SET) != 0) {
+		return -1;
+	}
+	
+	if (fseeko(dst, dstoff, SEEK_SET) != 0) {
+		return -1;
+	}
+
+	while (size > 0) {
+		size_t chunk_size = size >= BUFSIZ ? BUFSIZ : size;
+		if (fread(buf, chunk_size, 1, src) != 1) {
+			return -1;
+		}
+		if (fwrite(buf, chunk_size, 1, dst) != 1) {
+			return -1;
+		}
+		size -= chunk_size;
+	}
+
+	return 0;
+}
+
 enum gm_section {
 	GM_END = 0,
 
@@ -359,6 +384,7 @@ enum gm_section {
 	GM_BGND,
 	GM_PATH,
 	GM_SCPT,
+	GM_SHDR,
 	GM_FONT,
 	GM_TMLN,
 	GM_OBJT,
@@ -373,7 +399,7 @@ enum gm_section {
 	GM_AUDO
 };
 
-struct {
+struct gm_patch {
 	enum gm_section section;
 	size_t index;
 	const unsigned char *data;
@@ -384,9 +410,9 @@ struct {
 			size_t height;
 		} txtr;
 	} meta;
-} gm_patch;
+};
 
-struct {
+struct gm_entry {
 	off_t  offset;
 	size_t size;
 	union {
@@ -395,9 +421,9 @@ struct {
 			size_t height;
 		} txtr;
 	} meta;
-} gm_entry;
+};
 
-struct {
+struct gm_index {
 	enum gm_section section;
 	
 	off_t  offset;
@@ -405,9 +431,35 @@ struct {
 
 	size_t entry_count;
 	struct gm_entry *entries;
-} gm_index;
+};
+
+struct gm_patched_entry {
+	off_t  offset;
+	size_t size;
+
+	const struct gm_patch *patch;
+	const struct gm_entry *entry;
+};
+
+struct gm_patched_index {
+	enum gm_section section;
+
+	off_t  offset;
+	size_t size;
+
+	size_t entry_count;
+	struct gm_patched_entry *entries;
+
+	const struct gm_index *index;
+};
 
 #define U32LE_FROM_BUF(BUF) ((uint32_t)((BUF)[0]) | (uint32_t)((BUF)[1]) << 8 | (uint32_t)((BUF)[2]) << 16 | (uint32_t)((BUF)[3]) << 24)
+#define WRITE_U32LE(BUF,N) { \
+	(BUF)[0] =  (uint32_t)(N)        & 0xFF; \
+	(BUF)[1] = ((uint32_t)(N) >>  8) & 0xFF; \
+	(BUF)[2] = ((uint32_t)(N) >> 16) & 0xFF; \
+	(BUF)[3] = ((uint32_t)(N) >> 24) & 0xFF; \
+}
 
 void gm_free_index(struct gm_index *index) {
 	if (index) {
@@ -421,28 +473,138 @@ void gm_free_index(struct gm_index *index) {
 	}
 }
 
-enum gm_section gm_parse_section(const char *buffer) {
+struct gm_patched_index *gm_get_section(struct gm_patched_index *patched, enum gm_section section) {
+	for (; patched->section != GM_END; ++ patched) {
+		if (patched->section == section) {
+			return patched;
+		}
+	}
+	return NULL;
+}
+
+int gm_shift_tail(struct gm_patched_index *index, off_t offset) {
+	for (; index->section != GM_END; ++ index) {
+		switch (index->section) {
+		// only know how to move these sections so far:
+		case GM_TXTR:
+		case GM_AUDO:			
+			break;
+
+		default:
+			errno = EINVAL;
+			return -1;
+		}
+
+		index->offset += offset;
+
+		for (size_t i = 0; i < index->entry_count; ++ i) {
+			index->entries[i].offset += offset;
+		}
+	}
+
+	return 0;
+}
+
+int gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch) {
+	switch (index->section) {
+	// only know how to patch these sections so far:
+	case GM_TXTR:
+	case GM_AUDO:			
+		break;
+
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (patch->index >= index->entry_count) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	struct gm_patched_entry *entry = &index->entries[patch->index];
+	if (entry->patch) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	off_t offset = patch->size - entry->entry->size;
+	index->size += offset;
+	entry->size  = patch->size;
+	entry->patch = patch;
+
+	// also look at previous siblings, just in case
+	for (size_t i = 0; i < index->entry_count; ++ i) {
+		struct gm_patched_entry *other = &index->entries[i];
+		if (other->offset > entry->offset) {
+			other->offset += offset;
+		}
+	}
+
+	return gm_shift_tail(index + 1, offset);
+}
+
+void gm_free_patched_index(struct gm_patched_index *index) {
+	if (index) {
+		for (struct gm_patched_index *ptr = index; ptr->section != GM_END; ++ ptr) {
+			if (ptr->entries) {
+				free(ptr->entries);
+				ptr->entries = NULL;
+			}
+		}
+		free(index);
+	}
+}
+
+const char *gm_section_name(enum gm_section section) {
+	switch (section) {
+	case GM_GEN8: return "GEN8";
+	case GM_OPTN: return "OPTN";
+	case GM_EXTN: return "EXTN";
+	case GM_SOND: return "SOND";
+	case GM_SPRT: return "SPRT";
+	case GM_BGND: return "BGND";
+	case GM_PATH: return "PATH";
+	case GM_SCPT: return "SCPT";
+	case GM_SHDR: return "SHDR";
+	case GM_FONT: return "FONT";
+	case GM_TMLN: return "TMLN";
+	case GM_OBJT: return "OBJT";
+	case GM_ROOM: return "ROOM";
+	case GM_DAFL: return "DAFL";
+	case GM_TPAG: return "TPAG";
+	case GM_CODE: return "CODE";
+	case GM_VARI: return "VARI";
+	case GM_FUNC: return "FUNC";
+	case GM_STRG: return "STRG";
+	case GM_TXTR: return "TXTR";
+	case GM_AUDO: return "AUDO";
+	default: return NULL;
+	}
+}
+
+enum gm_section gm_parse_section(const char *name) {
 	if      (memcmp("GEN8", name, 4) == 0) { return GM_GEN8; }
-	else if (strcmp("OPTN", name, 4) == 0) { return GM_OPTN; }
-	else if (strcmp("EXTN", name, 4) == 0) { return GM_EXTN; }
-	else if (strcmp("SOND", name, 4) == 0) { return GM_SOND; }
-	else if (strcmp("SPRT", name, 4) == 0) { return GM_SPRT; }
-	else if (strcmp("BGND", name, 4) == 0) { return GM_BGND; }
-	else if (strcmp("PATH", name, 4) == 0) { return GM_PATH; }
-	else if (strcmp("SCPT", name, 4) == 0) { return GM_SCPT; }
-	else if (strcmp("SHDR", name, 4) == 0) { return GM_SHDR; }
-	else if (strcmp("FONT", name, 4) == 0) { return GM_FONT; }
-	else if (strcmp("TMLN", name, 4) == 0) { return GM_TMLN; }
-	else if (strcmp("OBJT", name, 4) == 0) { return GM_OBJT; }
-	else if (strcmp("ROOM", name, 4) == 0) { return GM_ROOM; }
-	else if (strcmp("DAFL", name, 4) == 0) { return GM_DAFL; }
-	else if (strcmp("TPAG", name, 4) == 0) { return GM_TPAG; }
-	else if (strcmp("CODE", name, 4) == 0) { return GM_CODE; }
-	else if (strcmp("VARI", name, 4) == 0) { return GM_VARI; }
-	else if (strcmp("FUNC", name, 4) == 0) { return GM_FUNC; }
-	else if (strcmp("STRG", name, 4) == 0) { return GM_STRG; }
-	else if (strcmp("TXTR", name, 4) == 0) { return GM_TXTR; }
-	else if (strcmp("AUDO", name, 4) == 0) { return GM_AUDO; }
+	else if (memcmp("OPTN", name, 4) == 0) { return GM_OPTN; }
+	else if (memcmp("EXTN", name, 4) == 0) { return GM_EXTN; }
+	else if (memcmp("SOND", name, 4) == 0) { return GM_SOND; }
+	else if (memcmp("SPRT", name, 4) == 0) { return GM_SPRT; }
+	else if (memcmp("BGND", name, 4) == 0) { return GM_BGND; }
+	else if (memcmp("PATH", name, 4) == 0) { return GM_PATH; }
+	else if (memcmp("SCPT", name, 4) == 0) { return GM_SCPT; }
+	else if (memcmp("SHDR", name, 4) == 0) { return GM_SHDR; }
+	else if (memcmp("FONT", name, 4) == 0) { return GM_FONT; }
+	else if (memcmp("TMLN", name, 4) == 0) { return GM_TMLN; }
+	else if (memcmp("OBJT", name, 4) == 0) { return GM_OBJT; }
+	else if (memcmp("ROOM", name, 4) == 0) { return GM_ROOM; }
+	else if (memcmp("DAFL", name, 4) == 0) { return GM_DAFL; }
+	else if (memcmp("TPAG", name, 4) == 0) { return GM_TPAG; }
+	else if (memcmp("CODE", name, 4) == 0) { return GM_CODE; }
+	else if (memcmp("VARI", name, 4) == 0) { return GM_VARI; }
+	else if (memcmp("FUNC", name, 4) == 0) { return GM_FUNC; }
+	else if (memcmp("STRG", name, 4) == 0) { return GM_STRG; }
+	else if (memcmp("TXTR", name, 4) == 0) { return GM_TXTR; }
+	else if (memcmp("AUDO", name, 4) == 0) { return GM_AUDO; }
 	else return GM_END;
 }
 
@@ -533,7 +695,7 @@ end:
 	return status;
 }
 
-int gm_read_index_audo(FILE *game, struct gm_index *index) {
+int gm_read_index_audo(FILE *game, struct gm_index *section) {
 	char buffer[4];
 	size_t count = 0;
 	off_t *offsets = NULL;
@@ -575,8 +737,8 @@ int gm_read_index_audo(FILE *game, struct gm_index *index) {
 			goto error;
 		}
 
-		entry->offset = offsets[index] + 4;
-		entry->size   = U32LE_FROM_BUF(buffer);
+		entry->offset = offsets[index];
+		entry->size   = U32LE_FROM_BUF(buffer) + 4;
 	}
 
 	section->entry_count = count;
@@ -630,14 +792,14 @@ struct gm_index *gm_read_index(FILE *game) {
 			goto error;
 		}
 
-		enum gm_section section = gm_parse_section(buffer);
-		if (gm_section == GM_END) {
+		enum gm_section section_type = gm_parse_section(buffer);
+		if (section_type == GM_END) {
 			errno = EINVAL;
 			goto error;
 		}
 
 		size_t section_size = U32LE_FROM_BUF(buffer + 4);
-		if (offset + section_size > end_offset) { // XXX: possible integer overflow
+		if ((size_t)offset + section_size > (size_t)end_offset) { // XXX: possible integer overflow
 			errno = EINVAL;
 			goto error;
 		}
@@ -653,19 +815,19 @@ struct gm_index *gm_read_index(FILE *game) {
 		}
 
 		struct gm_index *section = &index[count];
-		section->section = section;
+		section->section = section_type;
 		section->offset  = offset;
 		section->size    = section_size;
 
-		switch (section) {
+		switch (section_type) {
 		case GM_TXTR:
-			if (gm_read_index_txtr(game, section_size, section) != 0) {
+			if (gm_read_index_txtr(game, section) != 0) {
 				goto error;
 			}
 			break;
 
 		case GM_AUDO:
-			if (gm_read_index_audo(game, section_size, section) != 0) {
+			if (gm_read_index_audo(game, section) != 0) {
 				goto error;
 			}
 			break;
@@ -692,6 +854,37 @@ error:
 
 end:
 	return index;
+}
+
+size_t gm_form_size(const struct gm_patched_index *index) {
+	size_t size = 0;
+	while (index->section != GM_END) {
+		size += index->size + 8;
+		++ index;
+	}
+	return size;
+}
+
+int gm_write_hdr(FILE *fp, const char *magic, size_t size) {
+	if (!magic) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (size > UINT32_MAX) {
+		errno = ERANGE;
+		return -1;
+	}
+
+	char buffer[8];
+	memcpy(buffer, magic, 4);
+	WRITE_U32LE(buffer + 4, (uint32_t)size);
+
+	if (fwrite(buffer, 8, 1, fp) != 1) {
+		return -1;
+	}
+
+	return 0;
 }
 
 size_t gm_index_length(const struct gm_index *index) {
@@ -737,28 +930,193 @@ end:
 	return clone;
 }
 
-int gm_patch_archive(FILE *game, struct gm_patch *patches) {
+int gm_patch_archive(const char *filename, struct gm_patch *patches) {
+	char tmpname[PATH_MAX];
+	FILE *game = NULL;
+	FILE *tmp  = NULL;
+	struct gm_index *index           = NULL;
+	struct gm_patched_index *patched = NULL;
 	int status = 0;
-	struct gm_index *index   = gm_read_index(game);
-	struct gm_index *patched = NULL;
 
+	if (snprintf(tmpname, PATH_MAX, "%s.tmp", filename) < 0) {
+		goto error;
+	}
+
+	game = fopen(filename, "rb");
+	if (!game) {
+		goto error;
+	}
+
+	index = gm_read_index(game);
 	if (!index) {
 		goto error;
 	}
 
-	patched = gm_clone_index(index);
+	// build patch index
+	const size_t count = gm_index_length(index);
+	patched = calloc(count, sizeof(struct gm_patched_index));
 	if (!patched) {
 		goto error;
 	}
 
+	for (size_t i = 0; i < count; ++ i) {
+		size_t entry_count = index[i].entry_count;
+		struct gm_patched_entry *entries = calloc(entry_count, sizeof(struct gm_patched_entry));
+		if (!entries) {
+			goto error;
+		}
+
+		struct gm_entry *index_entries = index[i].entries;
+		for (size_t j = 0; j < entry_count; ++ j) {
+			entries[j].offset = index_entries[j].offset;
+			entries[j].size   = index_entries[j].size;
+			entries[j].entry  = &index_entries[j];
+		}
+
+		patched[i].section     = index[i].section;
+		patched[i].offset      = index[i].offset;
+		patched[i].size        = index[i].size;
+		patched[i].entry_count = entry_count;
+		patched[i].entries     = entries;
+		patched[i].index       = &index[i];
+	}
+
+	// adjust patch index
 	for (struct gm_patch *ptr = patches; ptr->section != GM_END; ++ ptr) {
-		// TODO
+		struct gm_patched_index *section = gm_get_section(patched, ptr->section);
+		if (!section) {
+			errno = EINVAL;
+			goto error;
+		}
+
+		if (gm_patch_entry(section, ptr) != 0) {
+			goto error;
+		}
+	}
+
+	// write new archive
+	tmp = fopen(tmpname, "wb");
+	if (!tmp) {
+		goto error;
+	}
+
+	size_t form_size = gm_form_size(patched);
+	if (gm_write_hdr(tmp, "FORM", form_size) != 0) {
+		goto error;
+	}
+	
+	for (struct gm_patched_index *ptr = patched; ptr->section != GM_END; ++ ptr) {
+		char buffer[8];
+
+		if (fseeko(tmp, ptr->offset, SEEK_SET) != 0) {
+			goto error;
+		}
+
+		if (gm_write_hdr(tmp, gm_section_name(ptr->section), ptr->size) != 0) {
+			goto error;
+		}
+
+		switch (ptr->section) {
+		case GM_TXTR:
+			WRITE_U32LE(buffer, ptr->entry_count);
+			if (fwrite(buffer, 4, 1, tmp) != 1) {
+				goto error;
+			}
+			{
+				const uint32_t fileinfo_offset = (uint32_t)ptr->offset + 12 + 4 * ptr->entry_count;
+				for (size_t i = 0; i < ptr->entry_count; ++ i) {
+					WRITE_U32LE(buffer, fileinfo_offset + i * 4);
+					if (fwrite(buffer, 4, 1, tmp) != 1) {
+						goto error;
+					}
+				}
+				for (size_t i = 0; i < ptr->entry_count; ++ i) {
+					WRITE_U32LE(buffer, 1);
+					WRITE_U32LE(buffer + 4, ptr->entries[i].offset);
+					if (fwrite(buffer, 8, 1, tmp) != 1) {
+						goto error;
+					}
+				}
+				for (size_t i = 0; i < ptr->entry_count; ++ i) {
+					struct gm_patched_entry *entry = &ptr->entries[i];
+					if (entry->patch) {
+						if (fseeko(tmp, entry->offset, SEEK_SET) != 0) {
+							goto error;
+						}
+						if (fwrite(entry->patch->data, entry->patch->size, 1, tmp) != 1) {
+							goto error;
+						}
+					}
+					else if (copydata(game, entry->entry->offset, tmp, entry->offset, entry->size) != 0) {
+						goto error;
+					}
+				}			
+			}
+			break;
+
+		case GM_AUDO:
+			WRITE_U32LE(buffer, ptr->entry_count);
+			if (fwrite(buffer, 4, 1, tmp) != 1) {
+				goto error;
+			}
+			for (size_t i = 0; i < ptr->entry_count; ++ i) {
+				WRITE_U32LE(buffer, ptr->entries[i].offset);
+				if (fwrite(buffer, 4, 1, tmp) != 1) {
+					goto error;
+				}
+			}
+			for (size_t i = 0; i < ptr->entry_count; ++ i) {
+				struct gm_patched_entry *entry = &ptr->entries[i];
+				if (entry->patch) {
+					if (fseeko(tmp, entry->offset, SEEK_SET) != 0) {
+						goto error;
+					}
+					// this means patch->data must already include the file size
+					if (fwrite(entry->patch->data, entry->patch->size, 1, tmp) != 1) {
+						goto error;
+					}
+				}
+				else if (copydata(game, entry->entry->offset, tmp, entry->offset, entry->size) != 0) {
+					goto error;
+				}
+			}
+			break;
+
+		default:
+			if (copydata(game, ptr->index->offset, tmp, ptr->offset, ptr->size) != 0) {
+				goto error;
+			}
+		}
+	}
+
+	if (fclose(game) != 0) {
+		game = NULL;
+		goto error;
+	}
+	
+	if (fclose(tmp) != 0) {
+		tmp = NULL;
+		goto error;
+	}
+
+	if (rename(tmpname, filename) != 0) {
+		goto error;
 	}
 
 	goto end;
 
 error:
 	status = -1;
+
+	if (game) {
+		fclose(game);
+		game = NULL;
+	}
+	
+	if (tmp) {
+		fclose(tmp);
+		tmp = NULL;
+	}
 
 end:
 
@@ -768,7 +1126,7 @@ end:
 	}
 
 	if (patched) {
-		gm_free_index(patched);
+		gm_free_patched_index(patched);
 		patched = NULL;
 	}
 
