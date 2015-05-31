@@ -13,7 +13,7 @@ CSD_DIR=$(STEAMDIR)/SteamApps/common/CookServeDelicious
 ARCH_FLAGS=
 
 QP_OBJ=$(BUILDDIR)/quick_patch.o\
-       $(BUILDDIR)/patch_game.o \
+       $(BUILDDIR)/game_maker.o \
        $(BUILDDIR)/png_info.o
 
 CSH_OBJ=$(BUILDDIR)/cook_serve_hoomans.o \

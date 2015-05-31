@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct png_info {
 	size_t   filesize;
 	uint32_t width;
@@ -17,5 +21,9 @@ struct png_info {
 };
 
 int parse_png_info(FILE *file, struct png_info *info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

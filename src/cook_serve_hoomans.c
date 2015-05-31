@@ -211,7 +211,7 @@ error:
 
 end:
 
-#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#if GM_WINDOWS
 	printf("Press ENTER to continue...");
 	getchar();
 #endif

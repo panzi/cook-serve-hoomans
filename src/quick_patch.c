@@ -1,4 +1,4 @@
-#include "patch_game.h"
+#include "game_maker.h"
 #include "png_info.h"
 #include "cook_serve_hoomans.h"
 
@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <strings.h>
+#include <errno.h>
 
 const char *filename(const char *path) {
 	const char *ptr = path + strlen(path) - 1;
@@ -22,10 +22,10 @@ const char *filename(const char *path) {
 	return path;
 }
 
-unsigned char *load_file(const char *filename, uint32_t width, uint32_t height, size_t *sizeptr) {
+uint8_t *load_file(const char *filename, uint32_t width, uint32_t height, size_t *sizeptr) {
 	struct png_info info;
 	FILE *file = fopen(filename, "rb");
-	unsigned char *data = NULL;
+	uint8_t *data = NULL;
 	off_t size = -1;
 
 	if (!file) {
@@ -94,14 +94,20 @@ cleanup:
 
 int main(int argc, char *argv[]) {
 	int status = EXIT_SUCCESS;
-	FILE *game = NULL;
 	const char *game_filename    = NULL;
 	const char *icons_filename   = NULL;
 	const char *hoomans_filename = NULL;
-	unsigned char *icons_data   = NULL;
-	unsigned char *hoomans_data = NULL;
+	uint8_t *icons_data   = NULL;
+	uint8_t *hoomans_data = NULL;
 	size_t icons_len   = 0;
 	size_t hoomans_len = 0;
+
+	struct gm_patch patches[] = {
+		GM_PATCH_END,
+		GM_PATCH_END,
+		GM_PATCH_END
+	};
+	struct gm_patch *patch = patches;
 
 	if (argc < 3) {
 		fprintf(stderr, "*** ERROR: Please pass %s, hoomans.png and/or icons.png to this program.\n", CSH_GAME_ARCHIVE);
@@ -134,41 +140,49 @@ int main(int argc, char *argv[]) {
 		goto error;
 	}
 
-	if (icons_filename && !(icons_data = load_file(icons_filename, CSH_ICONS_WIDTH, CSH_ICONS_HEIGHT, &icons_len))) {
-		goto error;
+	if (icons_filename) {
+		icons_data = load_file(icons_filename, CSH_ICONS_WIDTH, CSH_ICONS_HEIGHT, &icons_len);
+		if (!icons_data) {
+			goto error;
+		}
+		patch->section = GM_TXTR;
+		patch->index   = CSH_ICONS_INDEX;
+		patch->type    = GM_PNG;
+		patch->data    = icons_data;
+		patch->size    = icons_len;
+		patch->meta.txtr.width  = CSH_ICONS_WIDTH;
+		patch->meta.txtr.height = CSH_ICONS_HEIGHT;
+		patch ++;
 	}
 
-	if (hoomans_filename && !(hoomans_data = load_file(hoomans_filename, CSH_HOOMANS_WIDTH, CSH_HOOMANS_HEIGHT, &hoomans_len))) {
-		goto error;
+	if (hoomans_filename) {
+		hoomans_data = load_file(hoomans_filename, CSH_HOOMANS_WIDTH, CSH_HOOMANS_HEIGHT, &hoomans_len);
+		if (!hoomans_data) {
+			goto error;
+		}
+		patch->section = GM_TXTR;
+		patch->index   = CSH_HOOMANS_INDEX;
+		patch->type    = GM_PNG;
+		patch->data    = hoomans_data;
+		patch->size    = hoomans_len;
+		patch->meta.txtr.width  = CSH_HOOMANS_WIDTH;
+		patch->meta.txtr.height = CSH_HOOMANS_HEIGHT;
+		patch ++;
 	}
 
-	game = fopen(game_filename, "r+b");
-	if (!game) {
-		perror(game_filename);
-		goto error;
-	}
-
-	if (icons_data && patch_game(game, CSH_ICONS_OFFSET, icons_data, icons_len, CSH_ICONS_WIDTH, CSH_ICONS_HEIGHT) != 0) {
-		goto error;
-	}
-
-	if (hoomans_data && patch_game(game, CSH_HOOMANS_OFFSET, hoomans_data, hoomans_len, CSH_HOOMANS_WIDTH, CSH_HOOMANS_HEIGHT) != 0) {
+	if (gm_patch_archive(game_filename, patches) != 0) {
+		fprintf(stderr, "*** ERROR: Error patching archive: %s\n", strerror(errno));
 		goto error;
 	}
 
 	printf("Successfully replaced sprites.\n");
 
-	goto cleanup;
+	goto end;
 
 error:
 	status = EXIT_FAILURE;
 
-cleanup:
-	
-	if (game) {
-		fclose(game);
-		game = NULL;
-	}
+end:
 
 	if (hoomans_data) {
 		free(hoomans_data);
