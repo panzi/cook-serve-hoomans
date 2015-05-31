@@ -5,7 +5,7 @@ BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
 BUILDDIR=build/$(TARGET)
 INCLUDE=-I$(BUILDDIR)
-COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 $(INCLUDE) -g
+COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 $(INCLUDE) -O2
 POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic -fdiagnostics-color
 CFLAGS=$(COMMON_CFLAGS)
 STEAMDIR=~/.steam/steam
@@ -23,6 +23,10 @@ CSH_OBJ=$(BUILDDIR)/cook_serve_hoomans.o \
         $(BUILDDIR)/icons_png.o
 
 DMP_OBJ=$(BUILDDIR)/gmdump.o \
+        $(BUILDDIR)/game_maker.o \
+        $(BUILDDIR)/png_info.o
+        
+UPD_OBJ=$(BUILDDIR)/gmupdate.o \
         $(BUILDDIR)/game_maker.o \
         $(BUILDDIR)/png_info.o
 
@@ -48,15 +52,17 @@ endif
 endif
 endif
 
-.PHONY: all clean cook_serve_hoomans quick_patch gmdump patch setup
+.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate patch setup
 
-all: cook_serve_hoomans quick_patch gmdump
+all: cook_serve_hoomans quick_patch gmdump gmupdate
 
 cook_serve_hoomans: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
 
 quick_patch: $(BUILDDIR)/quick_patch$(BINEXT)
 
 gmdump: $(BUILDDIR)/gmdump$(BINEXT)
+
+gmupdate: $(BUILDDIR)/gmupdate$(BINEXT)
 
 setup:
 	mkdir -p $(BUILDDIR)
@@ -88,6 +94,9 @@ $(BUILDDIR)/quick_patch$(BINEXT): $(QP_OBJ)
 $(BUILDDIR)/gmdump$(BINEXT): $(DMP_OBJ)
 	$(CC) $(ARCH_FLAGS) $(DMP_OBJ) -o $@
 
+$(BUILDDIR)/gmupdate$(BINEXT): $(UPD_OBJ)
+	$(CC) $(ARCH_FLAGS) $(UPD_OBJ) -o $@
+
 clean:
 	rm -f \
 		$(BUILDDIR)/hoomans_png.h \
@@ -98,10 +107,12 @@ clean:
 		$(BUILDDIR)/cook_serve_hoomans.o \
 		$(BUILDDIR)/quick_patch.o \
 		$(BUILDDIR)/gmdump.o \
+		$(BUILDDIR)/gmupdate.o \
 		$(BUILDDIR)/hoomans_png.o \
 		$(BUILDDIR)/icons_png.o \
 		$(BUILDDIR)/game_maker.o \
 		$(BUILDDIR)/png_info.o \
 		$(BUILDDIR)/cook_serve_hoomans$(BINEXT) \
 		$(BUILDDIR)/quick_patch$(BINEXT) \
-		$(BUILDDIR)/gmdump$(BINEXT)
+		$(BUILDDIR)/gmdump$(BINEXT) \
+		$(BUILDDIR)/gmupdate$(BINEXT)

@@ -49,12 +49,22 @@ enum gm_section {
 	GM_AUDO
 };
 
+enum gm_patch_src {
+	GM_SRC_MEM,
+	GM_SRC_FILE
+};
+
 struct gm_patch {
-	enum gm_section      section;
-	size_t               index;
-	enum gm_filetype     type;
-	const unsigned char *data;
-	size_t               size;
+	enum gm_section   section;
+	size_t            index;
+	enum gm_filetype  type;
+	enum gm_patch_src patch_src;
+	size_t            size;
+
+	union {
+		const uint8_t *data;
+		const char *filename;
+	} src;
 
 	union {
 		struct {
@@ -65,13 +75,13 @@ struct gm_patch {
 };
 
 #define GM_PATCH_TXTR(INDEX, DATA, SIZE, WIDTH, HEIGHT) \
-	{ GM_TXTR, (INDEX), GM_PNG, (DATA), (SIZE), { .txtr = { (WIDTH), (HEIGHT) } } }
+	{ GM_TXTR, (INDEX), GM_PNG, GM_SRC_MEM, (SIZE), { .data = (DATA) }, { .txtr = { (WIDTH), (HEIGHT) } } }
 
 #define GM_PATCH_AUDO(INDEX, DATA, SIZE, TYPE) \
-	{ GM_AUDO, (INDEX), (TYPE), (DATA), (SIZE), { .txtr = { 0, 0 } } }
+	{ GM_AUDO, (INDEX), (TYPE), GM_SRC_MEM, (SIZE), { .data = (DATA) }, { .txtr = { 0, 0 } } }
 
 #define GM_PATCH_END \
-	{ GM_END, 0, GM_UNKNOWN, NULL, 0, { .txtr = { 0, 0 } } }
+	{ GM_END, 0, GM_UNKNOWN, GM_SRC_MEM, 0, { .data = NULL }, { .txtr = { 0, 0 } } }
 
 struct gm_entry {
 	off_t            offset;
@@ -119,6 +129,7 @@ struct gm_patched_index {
 struct gm_patched_index *gm_get_section(struct gm_patched_index *patched, enum gm_section section);
 size_t                   gm_index_length(const struct gm_index *index);
 int                      gm_patch_archive(const char *filename, const struct gm_patch *patches);
+int                      gm_patch_archive_from_dir(const char *filename, const char *dirname);
 int                      gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch);
 int                      gm_shift_tail(struct gm_patched_index *index, off_t offset);
 void                     gm_free_patched_index(struct gm_patched_index *index);

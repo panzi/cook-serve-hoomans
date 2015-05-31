@@ -4,11 +4,13 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <dirent.h>
 
 #define U32LE_FROM_BUF(BUF) ((uint32_t)((BUF)[0]) | ((uint32_t)((BUF)[1]) << 8) | ((uint32_t)((BUF)[2]) << 16) | ((uint32_t)((BUF)[3]) << 24))
 
@@ -27,7 +29,7 @@
 #	define mkdir(PATH,MODE) _mkdir(PATH)
 #endif
 
-static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t size) {
+static int gm_copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t size) {
 	uint8_t buf[BUFSIZ];
 
 	if (src == dst) {
@@ -61,7 +63,7 @@ static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t siz
 	return 0;
 }
 
-static int mkdirs(const char *pathname) {
+static int gm_mkpath(const char *pathname) {
 	char buf[PATH_MAX];
 	struct stat st;
 
@@ -122,6 +124,38 @@ static int mkdirs(const char *pathname) {
 	}
 
 	return 0;
+}
+
+static int gm_write_patch_data(FILE *fp, const struct gm_patch *patch) {
+	int status = 0;
+
+	switch (patch->patch_src) {
+	case GM_SRC_MEM:
+		if (fwrite(patch->src.data, patch->size, 1, fp) != 1) {
+			status = -1;
+		}
+		break;
+
+	case GM_SRC_FILE:
+		{
+			FILE *infile = fopen(patch->src.filename, "rb");
+			if (infile) {
+				status = gm_copydata(infile, 0, fp, ftello(fp), patch->size);
+				fclose(infile);
+			}
+			else {
+				status = -1;
+			}
+		}
+		break;
+	
+	default:
+		errno = EINVAL;
+		status = -1;
+		break;
+	}
+
+	return status;
 }
 
 void gm_free_index(struct gm_index *index) {
@@ -705,18 +739,18 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 	patched[count].section = GM_END;
 
 	// adjust patch index
-	for (const struct gm_patch *ptr = patches; ptr->section != GM_END; ++ ptr) {
-		struct gm_patched_index *section = gm_get_section(patched, ptr->section);
+	for (const struct gm_patch *patch = patches; patch->section != GM_END; ++ patch) {
+		struct gm_patched_index *section = gm_get_section(patched, patch->section);
 		if (!section) {
-			LOG_ERR("archive contains no %s section", gm_section_name(ptr->section));
+			LOG_ERR("archive contains no %s section", gm_section_name(patch->section));
 
 			errno = EINVAL;
 			goto error;
 		}
 
-		if (gm_patch_entry(section, ptr) != 0) {
+		if (gm_patch_entry(section, patch) != 0) {
 			LOG_ERR("applying patch for section %s, entry %" PRIuPTR " failed",
-				gm_section_name(ptr->section), ptr->index);
+				gm_section_name(patch->section), patch->index);
 			goto error;
 		}
 	}
@@ -770,11 +804,11 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 					if (fseeko(tmp, entry->offset, SEEK_SET) != 0) {
 						goto error;
 					}
-					if (fwrite(entry->patch->data, entry->patch->size, 1, tmp) != 1) {
+					if (gm_write_patch_data(tmp, entry->patch) != 0) {
 						goto error;
 					}
 				}
-				else if (copydata(game, entry->entry->offset, tmp, entry->offset, entry->size) != 0) {
+				else if (gm_copydata(game, entry->entry->offset, tmp, entry->offset, entry->size) != 0) {
 					goto error;
 				}
 			}
@@ -803,18 +837,18 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 					if (fwrite(buffer, 4, 1, tmp) != 1) {
 						goto error;
 					}
-					if (fwrite(entry->patch->data, entry->patch->size, 1, tmp) != 1) {
+					if (gm_write_patch_data(tmp, entry->patch) != 0) {
 						goto error;
 					}
 				}
-				else if (copydata(game, entry->entry->offset - 4, tmp, entry->offset - 4, entry->size + 4) != 0) {
+				else if (gm_copydata(game, entry->entry->offset - 4, tmp, entry->offset - 4, entry->size + 4) != 0) {
 					goto error;
 				}
 			}
 			break;
 
 		default:
-			if (copydata(game, ptr->index->offset, tmp, ptr->offset, ptr->size + 8) != 0) {
+			if (gm_copydata(game, ptr->index->offset, tmp, ptr->offset, ptr->size + 8) != 0) {
 				goto error;
 			}
 		}
@@ -864,6 +898,243 @@ end:
 	return status;
 }
 
+int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
+	size_t capacity = 256;
+	struct gm_patch *patches = calloc(capacity, sizeof(struct gm_patch));
+	size_t i = 0;
+	char *endptr = NULL;
+	DIR *dir = NULL;
+	FILE *fp = NULL;
+	struct dirent *entry = NULL;
+	char namebuf[PATH_MAX];
+	long int index = 0;
+	int status = 0;
+
+	if (!patches) {
+		perror("listing files");
+		goto error;
+	}
+
+	if (snprintf(namebuf, sizeof(namebuf), "%s%ctxtr", dirname, GM_PATH_SEP) < 0) {
+		perror("listing files");
+		goto error;
+	}
+
+	dir = opendir(namebuf);
+	if (dir) {
+		struct png_info info;
+
+		for (;;) {
+			if (i + 1 == capacity) {
+				if (SIZE_MAX / (2 * sizeof(struct gm_patch)) < capacity) {
+					errno = ENOMEM;
+					perror("listing files");
+					goto error;
+				}
+				capacity *= 2;
+				struct gm_patch *new_patches = realloc(patches, capacity * sizeof(struct gm_patch));
+				if (!new_patches) {
+					perror("listing files");
+					goto error;
+				}
+				memset(new_patches + i, 0, (capacity - i) * sizeof(struct gm_patch));
+				patches = new_patches;
+			}
+
+			errno = 0;
+			entry = readdir(dir);
+			if (!entry) {
+				if (errno != 0) {
+					perror("listing files");
+					goto error;
+				}
+				break;
+			}
+
+			if (snprintf(namebuf, sizeof(namebuf), "%s%ctxtr%c%s", dirname, GM_PATH_SEP, GM_PATH_SEP, entry->d_name) < 0) {
+				perror("listing files");
+				goto error;
+			}
+			
+			index = strtol(entry->d_name, &endptr, 10);
+			if ((strcasecmp(endptr, ".png") != 0 && strcasecmp(endptr, ".dat") != 0) ||
+				endptr == entry->d_name || index < 0 || index > UINT32_MAX) {
+				// ignore file
+				continue;
+			}
+
+			fp = fopen(namebuf, "rb");
+			if (!fp) {
+				perror(namebuf);
+				goto error;
+			}
+
+			if (parse_png_info(fp, &info) != 0) {
+				perror(namebuf);
+				goto error;
+			}
+			fclose(fp);
+			fp = NULL;
+
+			char *filename = strdup(namebuf);
+			if (!filename) {
+				perror(namebuf);
+				goto error;
+			}
+
+			struct gm_patch *ptr = &patches[i];
+			ptr->section      = GM_TXTR;
+			ptr->index        = index;
+			ptr->type         = GM_PNG;
+			ptr->patch_src    = GM_SRC_FILE;
+			ptr->size         = info.filesize;
+			ptr->src.filename = filename;
+			ptr->meta.txtr.width  = info.width;
+			ptr->meta.txtr.height = info.height;
+
+			++ i;
+		}
+	}
+	else if (errno != ENOENT) {
+		perror("listing files");
+		goto error;
+	}
+
+	if (snprintf(namebuf, sizeof(namebuf), "%s%caudo", dirname, GM_PATH_SEP) < 0) {
+		perror("listing files");
+		goto error;
+	}
+
+	dir = opendir(namebuf);
+	if (dir) {
+		struct stat st;
+		char buffer[12];
+
+		for (;;) {
+			if (i + 1 == capacity) {
+				if (SIZE_MAX / (2 * sizeof(struct gm_patch)) < capacity) {
+					errno = ENOMEM;
+					perror("listing files");
+					goto error;
+				}
+				capacity *= 2;
+				struct gm_patch *new_patches = realloc(patches, capacity * sizeof(struct gm_patch));
+				if (!new_patches) {
+					perror("listing files");
+					goto error;
+				}
+				memset(new_patches + i, 0, (capacity - i) * sizeof(struct gm_patch));
+				patches = new_patches;
+			}
+
+			errno = 0;
+			entry = readdir(dir);
+			if (!entry) {
+				if (errno != 0) {
+					perror("listing files");
+					goto error;
+				}
+				break;
+			}
+
+			if (snprintf(namebuf, sizeof(namebuf), "%s%caudo%c%s", dirname, GM_PATH_SEP, GM_PATH_SEP, entry->d_name) < 0) {
+				perror("listing files");
+				goto error;
+			}
+			
+			index = strtol(entry->d_name, &endptr, 10);
+			if ((strcasecmp(endptr, ".wav") != 0 && strcasecmp(endptr, ".ogg") != 0 && strcasecmp(endptr, ".dat") != 0) ||
+				endptr == entry->d_name || index < 0 || index > UINT32_MAX) {
+				// ignore file
+				continue;
+			}
+
+			if (stat(namebuf, &st) != 0) {
+				perror(namebuf);
+				goto error;
+			}
+
+			fp = fopen(namebuf, "rb");
+			if (!fp) {
+				perror(namebuf);
+				goto error;
+			}
+
+			const size_t count = fread(buffer, 1, sizeof(buffer), fp);
+			if (ferror(fp)) {
+				perror(namebuf);
+				goto error;
+			}
+			fclose(fp);
+			fp = NULL;
+
+			char *filename = strdup(namebuf);
+			if (!filename) {
+				perror(namebuf);
+				goto error;
+			}
+
+			struct gm_patch *ptr = &patches[i];
+			if (count >= 12 && memcmp(buffer, "RIFF", 4) == 0 && memcmp(buffer + 8, "WAVE", 4) == 0) {
+				ptr->type = GM_WAVE;
+			}
+			else if (count >= 4 && memcmp(buffer, "OggS", 4) == 0) {
+				ptr->type = GM_OGG;
+			}
+			else {
+				ptr->type = GM_UNKNOWN;
+			}
+
+			ptr->section      = GM_TXTR;
+			ptr->index        = index;
+			ptr->patch_src    = GM_SRC_FILE;
+			ptr->size         = st.st_size;
+			ptr->src.filename = filename;
+
+			++ i;
+		}
+	}
+	else if (errno != ENOENT) {
+		perror("listing files");
+		goto error;
+	}
+
+	patches[i].section = GM_END;
+
+	if (gm_patch_archive(filename, patches) != 0) {
+		goto error;
+	}
+
+	goto end;
+
+error:
+	status = -1;
+
+end:
+	if (fp) {
+		fclose(fp);
+		fp = NULL;
+	}
+
+	if (dir) {
+		closedir(dir);
+		dir = NULL;
+	}
+
+	if (patches) {
+		for (struct gm_patch *patch = patches; patch->section != GM_END; ++ patch) {
+			if (patch->src.filename) {
+				free((void*)patch->src.filename);
+				patch->src.filename = NULL;
+			}
+		}
+		free(patches);
+		patches = NULL;
+	}
+
+	return status;
+}
+
 const char *gm_extension(enum gm_filetype type) {
 	switch (type) {
 		case GM_PNG:  return ".png";
@@ -905,7 +1176,7 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 			return -1;
 		}
 
-		if (mkdirs(buf) != 0) {
+		if (gm_mkpath(buf) != 0) {
 			return -1;
 		}
 
@@ -924,7 +1195,7 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 				return -1;
 			}
 
-			if (copydata(game, entry->offset, fp, 0, entry->size) != 0) {
+			if (gm_copydata(game, entry->offset, fp, 0, entry->size) != 0) {
 				fclose(fp);
 				return -1;
 			}
