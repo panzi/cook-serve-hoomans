@@ -1,4 +1,5 @@
 #include "patch_game.h"
+#include "png_info.h"
 #include "cook_serve_hoomans.h"
 
 #include <stdio.h>
