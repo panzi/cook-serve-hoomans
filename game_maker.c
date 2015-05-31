@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#define U32LE_FROM_BUF(BUF) ((uint32_t)((BUF)[0]) | (uint32_t)((BUF)[1]) << 8 | (uint32_t)((BUF)[2]) << 16 | (uint32_t)((BUF)[3]) << 24)
+#define U32LE_FROM_BUF(BUF) ((uint32_t)((BUF)[0]) | ((uint32_t)((BUF)[1]) << 8) | ((uint32_t)((BUF)[2]) << 16) | ((uint32_t)((BUF)[3]) << 24))
 
 #define WRITE_U32LE(BUF,N) { \
 	(BUF)[0] =  (uint32_t)(N)        & 0xFF; \
@@ -19,8 +19,11 @@
 	(BUF)[3] = ((uint32_t)(N) >> 24) & 0xFF; \
 }
 
+#define LOG_ERR(FMT, ...) fprintf(stderr, "*** Error: " FMT "\n", ## __VA_ARGS__)
+#define LOG_ERR_MSG(MSG)  fprintf(stderr, "*** Error: " MSG "\n")
+
 static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t size) {
-	char buf[BUFSIZ];
+	uint8_t buf[BUFSIZ];
 
 	if (fseeko(src, srcoff, SEEK_SET) != 0) {
 		return -1;
@@ -49,6 +52,7 @@ static int mkdirs(const char *pathname, mode_t mode) {
 	struct stat st;
 
 	if (!pathname || !*pathname) {
+		LOG_ERR("illegal pathname: %s", pathname);
 		errno = EINVAL;
 		return -1;
 	}
@@ -74,14 +78,17 @@ static int mkdirs(const char *pathname, mode_t mode) {
 #endif
 			if (stat(buf, &st) == 0) {
 				if (!S_ISDIR(st.st_mode)) {
+					LOG_ERR("exists but is not a directory: %s", buf);
 					errno = ENOTDIR;
 					return -1;
 				}
 			}
 			else if (errno != ENOENT) {
+				LOG_ERR("%s: %s", buf, strerror(errno));
 				return -1;
 			}
 			else if (mkdir(buf, mode) != 0) {
+				LOG_ERR("%s: %s", buf, strerror(errno));
 				return -1;
 			}
 #ifdef GM_WINDOWS
@@ -125,7 +132,8 @@ int gm_shift_tail(struct gm_patched_index *index, off_t offset) {
 			break;
 
 		default:
-			errno = EINVAL;
+			LOG_ERR("can't move %s section (not implemented)", gm_section_name(index->section));
+			errno = ENOSYS;
 			return -1;
 		}
 
@@ -147,22 +155,32 @@ int gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch)
 		break;
 
 	default:
-		errno = EINVAL;
+		LOG_ERR("can't patch %s section (not implemented)", gm_section_name(index->section));
+
+		errno = ENOSYS;
 		return -1;
 	}
 
 	if (patch->index >= index->entry_count) {
+		LOG_ERR("patch index out of range: section = %s, patch index = %" PRIuPTR ", entry count = %" PRIuPTR,
+		        gm_section_name(index->section), patch->index, index->entry_count);
+
 		errno = EINVAL;
 		return -1;
 	}
 
 	struct gm_patched_entry *entry = &index->entries[patch->index];
 	if (entry->patch) {
+		LOG_ERR("section %s, entry %" PRIuPTR " is already patched", gm_section_name(index->section), patch->index);
+
 		errno = EINVAL;
 		return -1;
 	}
 
 	if (entry->entry->type != patch->type) {
+		LOG_ERR("section %s, entry %" PRIuPTR " type missmatch: entry type = %s, patch type = %s",
+			gm_section_name(index->section), patch->index, gm_typename(entry->entry->type), gm_typename(patch->type));
+
 		errno = EINVAL;
 		return -1;
 	}
@@ -171,6 +189,11 @@ int gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch)
 		// validate replacement sprite dimensions
 		if (entry->entry->meta.txtr.width  != patch->meta.txtr.width ||
 		    entry->entry->meta.txtr.height != patch->meta.txtr.height) {
+			LOG_ERR("section %s, entry %" PRIuPTR " sprite dimensions missmatch: entry dimensions = %" PRIuPTR "x%" PRIuPTR
+			        ", patch dimensions = %" PRIuPTR "x%" PRIuPTR,
+				gm_section_name(index->section), patch->index, entry->entry->meta.txtr.width, entry->entry->meta.txtr.height,
+				patch->meta.txtr.width, patch->meta.txtr.height);
+
 			errno = EINVAL;
 			return -1;
 		}
@@ -231,7 +254,7 @@ const char *gm_section_name(enum gm_section section) {
 	}
 }
 
-enum gm_section gm_parse_section(const char *name) {
+enum gm_section gm_parse_section(const uint8_t *name) {
 	if      (memcmp("GEN8", name, 4) == 0) { return GM_GEN8; }
 	else if (memcmp("OPTN", name, 4) == 0) { return GM_OPTN; }
 	else if (memcmp("EXTN", name, 4) == 0) { return GM_EXTN; }
@@ -257,7 +280,7 @@ enum gm_section gm_parse_section(const char *name) {
 }
 
 int gm_read_index_txtr(FILE *game, struct gm_index *section) {
-	char buffer[8];
+	uint8_t buffer[8];
 	size_t count = 0;
 	off_t *info_offsets = NULL;
 	struct gm_entry *entries = NULL;
@@ -298,8 +321,12 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 			goto error;
 		}
 
-		if (U32LE_FROM_BUF(buffer) != 1) {
-			errno = EINVAL;
+		const uint32_t value = U32LE_FROM_BUF(buffer);
+		if (value != 1) {
+			LOG_ERR("section %s, entry %" PRIuPTR " unexpected value of non-reverse engineered field: value = %" PRIu32,
+				gm_section_name(section->section), index, value);
+
+			errno = ENOSYS;
 			goto error;
 		}
 
@@ -312,6 +339,9 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 
 		struct png_info meta;
 		if (parse_png_info(game, &meta) != 0) {
+			LOG_ERR("section %s, entry %" PRIuPTR ": error parsing sprite file",
+				gm_section_name(section->section), index);
+
 			goto error;
 		}
 
@@ -345,7 +375,7 @@ end:
 }
 
 int gm_read_index_audo(FILE *game, struct gm_index *section) {
-	char buffer[12];
+	uint8_t buffer[12];
 	size_t count = 0;
 	off_t *offsets = NULL;
 	struct gm_entry *entries = NULL;
@@ -438,13 +468,17 @@ struct gm_index *gm_read_index(FILE *game) {
 		goto error;
 	}
 
-	char buffer[8];
+	uint8_t buffer[8];
 	if (fread(buffer, 8, 1, game) != 1) {
 		goto error;
 	}
 
 	if (memcmp(buffer, "FORM", 4) != 0) {
-		errno = EINVAL;
+		LOG_ERR("unsupported file magic: '%c%c%c%c' (0x%0x 0x%0x 0x%0x 0x%0x)",
+			buffer[0], buffer[1], buffer[2], buffer[3],
+			buffer[0], buffer[1], buffer[2], buffer[3]);
+
+		errno = ENOSYS;
 		goto error;
 	}
 
@@ -459,12 +493,20 @@ struct gm_index *gm_read_index(FILE *game) {
 
 		enum gm_section section_type = gm_parse_section(buffer);
 		if (section_type == GM_END) {
+			LOG_ERR("at offset %" PRIiPTR ": unsupported section magic: '%c%c%c%c' (0x%0x 0x%0x 0x%0x 0x%0x)",
+				offset,
+				buffer[0], buffer[1], buffer[2], buffer[3],
+				buffer[0], buffer[1], buffer[2], buffer[3]);
+
 			errno = EINVAL;
 			goto error;
 		}
 
 		size_t section_size = U32LE_FROM_BUF(buffer + 4);
-		if ((size_t)offset + section_size > (size_t)end_offset) { // XXX: possible integer overflow
+		if ((size_t)offset + section_size + 8 > (size_t)end_offset) { // XXX: possible integer overflow
+			LOG_ERR("%s section overflows file: section offset = %" PRIiPTR ", section size = %" PRIuPTR ", file size = %" PRIiPTR,
+				gm_section_name(section_type), offset, section_size + 8, end_offset);
+
 			errno = EINVAL;
 			goto error;
 		}
@@ -501,7 +543,7 @@ struct gm_index *gm_read_index(FILE *game) {
 			break;
 		}
 
-		offset += section_size;
+		offset += section_size + 8;
 		if (fseeko(game, offset, SEEK_SET) != 0) {
 			goto error;
 		}
@@ -530,18 +572,22 @@ size_t gm_form_size(const struct gm_patched_index *index) {
 	return size;
 }
 
-int gm_write_hdr(FILE *fp, const char *magic, size_t size) {
+int gm_write_hdr(FILE *fp, const uint8_t *magic, size_t size) {
 	if (!magic) {
+		LOG_ERR_MSG("magic may not be NULL");
+
 		errno = EINVAL;
 		return -1;
 	}
 
 	if (size > UINT32_MAX) {
+		LOG_ERR("section size out of range: size = %" PRIuPTR ", max size = %" PRIu32, size, UINT32_MAX);
+
 		errno = ERANGE;
 		return -1;
 	}
 
-	char buffer[8];
+	uint8_t buffer[8];
 	memcpy(buffer, magic, 4);
 	WRITE_U32LE(buffer + 4, (uint32_t)size);
 
@@ -616,6 +662,8 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 	for (struct gm_patch *ptr = patches; ptr->section != GM_END; ++ ptr) {
 		struct gm_patched_index *section = gm_get_section(patched, ptr->section);
 		if (!section) {
+			LOG_ERR("archive contains no %s section", gm_section_name(ptr->section));
+
 			errno = EINVAL;
 			goto error;
 		}
@@ -632,18 +680,18 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 	}
 
 	size_t form_size = gm_form_size(patched);
-	if (gm_write_hdr(tmp, "FORM", form_size) != 0) {
+	if (gm_write_hdr(tmp, (const uint8_t*)"FORM", form_size) != 0) {
 		goto error;
 	}
 	
 	for (struct gm_patched_index *ptr = patched; ptr->section != GM_END; ++ ptr) {
-		char buffer[8];
+		uint8_t buffer[8];
 
 		if (fseeko(tmp, ptr->offset, SEEK_SET) != 0) {
 			goto error;
 		}
 
-		if (gm_write_hdr(tmp, gm_section_name(ptr->section), ptr->size) != 0) {
+		if (gm_write_hdr(tmp, (const uint8_t*)gm_section_name(ptr->section), ptr->size) != 0) {
 			goto error;
 		}
 
@@ -773,6 +821,15 @@ const char *gm_extension(enum gm_filetype type) {
 		case GM_WAVE: return ".wav";
 		case GM_OGG:  return ".ogg";
 		default:      return ".bin";
+	}
+}
+
+const char *gm_typename(enum gm_filetype type) {
+	switch (type) {
+		case GM_PNG:  return "PNG";
+		case GM_WAVE: return "WAVE";
+		case GM_OGG:  return "Ogg";
+		default:      return "(Unknown)";
 	}
 }
 
