@@ -74,10 +74,15 @@ Advanced Usage
 --------------
 
 For advanced users there is a second binary called `quick_patch.exe`. You can
-use this to patch `data.win` witch your own customer and/or icon sprites. Just
+use this to patch `data.win` with your own customer and/or icon sprites. Just
 drop `data.win`, `hoomans.png` and `icons.png` all together onto
 `quick_patch.exe`. It is important that the files are named like this so the
 program knows what to do with which file.
+
+If you can handle the shell there are even more binaries: `gmdump.exe` and
+`gmupdate.exe`. Use the first to dump all sprites and sound files from an
+Game Maker archive into a directory. After you edited those files you can
+use the second program to update the archive.
 
 Build From Source
 -----------------
@@ -115,35 +120,29 @@ How It Works
 ------------
 
 Cook, Serve, Delicious! uses [Game Maker](http://www.yoyogames.com/studio) from
-YoYo Games. I didn't bother to reverse engineer the archive file format of this
-game engine, but instead I just used [another program](https://github.com/panzi/mediaextract)
-I once wrote to extract all the PNG images contained in the `data.win` archive
-file. I just guessed that this game uses PNGs and I guessed right. I quickly
-found the image containing all the customer sprites.
+YoYo Games. At first I didn't bother reverse engineering the archive file format
+of this game engine, but because the file size replacement sprite got bigger than
+the file size of the original I had to reverse engineer at least a bit so I
+could rewrite the archive properly.
 
-Now how do I replace this image without understanding the archive format? I just
-edited the image (inserted a pictures of the hoomans) and wrote it over the
-existing image in the archive file. This is only possible if the new image has
-the same or a smaller file size than the old one. Otherwise other proportions of
-the archive would be overwritten and it would be corrupted. Luckily the original
-image seems to be not very well compressed and I could generate a replacement
-image that is smaller even though it contains more detail (in general photos
-have more details than cartoon characters and thus compress not so well).
+This program understands the overall structure of Game Maker archives and the
+detailed structure of the TXTR and AUDO sections. These are the last two
+sections in the archive, so when the TXTR section needs resizing absolute
+offsets in this section and the following section (AUDO) need to be adjusted.
+There don't seem to be any offsets to parts of those sections in other places.
+I will document what I know about this file format later.
 
-This means that this patch will stop working if there is an update that changes
-the offset of the image or reduces it's size too much. Then I will have to
-search for the sprite image again and adapt my patch.
-
-However, I built some safety mechanisms into the program to prevent archive
-corruption: Before it writes the new image into the archive it first checks if
-there is already a PNG file at the expected offset and if that file is big
-enough (file size) and has the right dimensions (pixel width and height).
+I don't know what will happen when there is a game update. Will the updater
+corrupt the archive, bail because the file isn't what it expects it to be or
+simply revert the patch? Your guess is a sgood as mine. In any case this program
+creates a `data.win.backup` file which you can use in case the game stops
+working. Just remove `data.win` and rename `data.win.backup` to `data.win`.
 
 Because Felicia uses Windows and one cannot assume the availability of any sane
-scripting language (like Python) on an arbitrary Windows installation I simply
-wrote a very simple self contained C program that writes the image into the
-file it gets passed as its first argument. Cross compiling simple C/C++ programs
-for Windows under Linux is easy.
+scripting language (like Python) on an arbitrary Windows installation I wrote a
+self contained C program that writes the images into the file it gets passed as
+its first argument. Cross compiling simple C/C++ programs for Windows under
+Linux is easy.
 
 However, it is very very cumbersome to cross compile stuff for Mac under Linux
 (the setup still requires access to a Mac and an Apple developer account), so I
