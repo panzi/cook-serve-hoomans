@@ -84,10 +84,6 @@ Build From Source
 
 (For advanced users and software developers only.)
 
-Compilation needs [median cut PNG posterizer](https://github.com/pornel/mediancut-posterizer)
-and [ImageMagick](http://www.imagemagick.org/) in order to reduce the file size
-of `hoomans.png` so it fits into the available space.
-
 In case you want to build this patching tool yourself download the source and
 simply run these commands in the source folder:
 

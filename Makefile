@@ -1,13 +1,12 @@
 CC=gcc
-POSTERIZE=posterize
 CONVERT=convert
 XXD=xxd
 BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
 BUILDDIR=build/$(TARGET)
 INCLUDE=-I$(BUILDDIR)
-COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 $(INCLUDE) -fdiagnostics-color -g
-POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic
+COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 $(INCLUDE) -g
+POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic -fdiagnostics-color
 CFLAGS=$(COMMON_CFLAGS)
 STEAMDIR=~/.steam/steam
 CSD_DIR=$(STEAMDIR)/SteamApps/common/CookServeDelicious
@@ -71,14 +70,14 @@ $(BUILDDIR)/%_png.c: %.png
 $(BUILDDIR)/%_png.h: %.png ./mkheader.sh
 	./mkheader.sh $< $@
 
-$(BUILDDIR)/%.o: %.c
+$(BUILDDIR)/%.o: src/%.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/%.o: $(BUILDDIR)/%.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILDDIR)/cook_serve_hoomans.o: cook_serve_hoomans.c $(BUILDDIR)/hoomans_png.h $(BUILDDIR)/icons_png.h
-	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c cook_serve_hoomans.c -o $@
+$(BUILDDIR)/cook_serve_hoomans.o: src/cook_serve_hoomans.c $(BUILDDIR)/hoomans_png.h $(BUILDDIR)/icons_png.h
+	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/cook_serve_hoomans$(BINEXT): $(CSH_OBJ)
 	$(CC) $(ARCH_FLAGS) $(CSH_OBJ) -o $@
@@ -89,23 +88,7 @@ $(BUILDDIR)/quick_patch$(BINEXT): $(QP_OBJ)
 $(BUILDDIR)/gmdump$(BINEXT): $(DMP_OBJ)
 	$(CC) $(ARCH_FLAGS) $(DMP_OBJ) -o $@
 
-#hoomans.png: opt/hoomans_opt.png
-#	cp $< $@
-
-hoomans.png: hoomans_src.png
-	cp $< $@
-
-opt/hoomans_opt.png: hoomans_post.png opt/Makefile
-	$(MAKE) -C opt
-
-opt/Makefile: opt/configure.sh
-	cd opt; ./configure.sh
-
-hoomans_post.png: hoomans_src.png
-	$(POSTERIZE) 255 $< $@
-
-clean: opt/Makefile
-	$(MAKE) -C opt clean
+clean:
 	rm -f \
 		$(BUILDDIR)/hoomans_png.h \
 		$(BUILDDIR)/hoomans_png.c \
@@ -121,6 +104,4 @@ clean: opt/Makefile
 		$(BUILDDIR)/png_info.o \
 		$(BUILDDIR)/cook_serve_hoomans$(BINEXT) \
 		$(BUILDDIR)/quick_patch$(BINEXT) \
-		$(BUILDDIR)/gmdump$(BINEXT) \
-		hoomans_post.png \
-		hoomans.png
+		$(BUILDDIR)/gmdump$(BINEXT)

@@ -22,6 +22,11 @@
 #define LOG_ERR(FMT, ...) fprintf(stderr, "*** ERROR: " FMT "\n", ## __VA_ARGS__)
 #define LOG_ERR_MSG(MSG)  fprintf(stderr, "*** ERROR: " MSG "\n")
 
+#if defined(GM_WINDOWS)
+#	include <direct.h>
+#	define mkdir(PATH,MODE) _mkdir(PATH)
+#endif
+
 static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t size) {
 	uint8_t buf[BUFSIZ];
 
@@ -56,7 +61,7 @@ static int copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t siz
 	return 0;
 }
 
-static int mkdirs(const char *pathname, mode_t mode) {
+static int mkdirs(const char *pathname) {
 	char buf[PATH_MAX];
 	struct stat st;
 
@@ -105,7 +110,7 @@ static int mkdirs(const char *pathname, mode_t mode) {
 			else if (errno != ENOENT) {
 				return -1;
 			}
-			else if (mkdir(buf, mode) != 0) {
+			else if (mkdir(buf, S_IRWXU) != 0) {
 				return -1;
 			}
 #ifdef GM_WINDOWS
@@ -325,7 +330,12 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 		}
 
 		uint32_t offset = U32LE_FROM_BUF(buffer);
-		// XXX: possible integer overflow on 32bit systems
+		if (offset > INT32_MAX) {
+			LOG_ERR("offset too big: offset = %" PRIu32 ", max. allowed = %" PRIu32, offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
 		info_offsets[index] = (off_t)offset;
 	}
 	
@@ -341,15 +351,20 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 
 		const uint32_t value = U32LE_FROM_BUF(buffer);
 		if (value != 1) {
-			LOG_ERR("at offset %" PRIiPTR ", section %s, entry %" PRIuPTR ": unexpected value of non-reverse engineered field: value = %" PRIu32,
-				info_offsets[index], gm_section_name(section->section), index, value);
+			LOG_ERR("at offset %" PRIi64 ", section %s, entry %" PRIuPTR ": unexpected value of non-reverse engineered field: value = %" PRIu32,
+				(int64_t)info_offsets[index], gm_section_name(section->section), index, value);
 
 			errno = ENOSYS;
 			goto error;
 		}
 
 		uint32_t offset = U32LE_FROM_BUF(buffer + 4);
-		// XXX: possible integer overflow on 32bit systems
+		if (offset > INT32_MAX) {
+			LOG_ERR("offset too big: offset = %" PRIu32 ", max. allowed = %" PRIu32, offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
 		entry->offset = (off_t)offset;
 		if (fseeko(game, (off_t)offset, SEEK_SET) != 0) {
 			goto error;
@@ -420,7 +435,12 @@ int gm_read_index_audo(FILE *game, struct gm_index *section) {
 		}
 
 		uint32_t offset = U32LE_FROM_BUF(buffer);
-		// XXX: possible integer overflow on 32bit systems
+		if (offset > INT32_MAX) {
+			LOG_ERR("offset too big: offset = %" PRIu32 ", max. allowed = %" PRIu32, offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
 		offsets[index] = (off_t)offset;
 	}
 	
@@ -511,8 +531,8 @@ struct gm_index *gm_read_index(FILE *game) {
 
 		enum gm_section section_type = gm_parse_section(buffer);
 		if (section_type == GM_END) {
-			LOG_ERR("at offset %" PRIiPTR ": unsupported section magic: '%c%c%c%c' (0x%0x 0x%0x 0x%0x 0x%0x)",
-				offset,
+			LOG_ERR("at offset %" PRIi64 ": unsupported section magic: '%c%c%c%c' (0x%0x 0x%0x 0x%0x 0x%0x)",
+				(int64_t)offset,
 				buffer[0], buffer[1], buffer[2], buffer[3],
 				buffer[0], buffer[1], buffer[2], buffer[3]);
 
@@ -521,9 +541,16 @@ struct gm_index *gm_read_index(FILE *game) {
 		}
 
 		size_t section_size = U32LE_FROM_BUF(buffer + 4);
-		if ((size_t)offset + section_size + 8 > (size_t)end_offset) { // XXX: possible integer overflow
-			LOG_ERR("%s section overflows file: section offset = %" PRIiPTR ", section size = %" PRIuPTR ", file size = %" PRIiPTR,
-				gm_section_name(section_type), offset, section_size + 8, end_offset);
+		if (section_size > INT32_MAX - 8 || offset > INT32_MAX - 8 - (int32_t)section_size) {
+			LOG_ERR("section size big: section size = %" PRIuPTR ", max. allowed = %" PRIu32, section_size, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		if ((size_t)offset + section_size + 8 > (size_t)end_offset) {
+			LOG_ERR("%s section overflows file: section offset = %" PRIi64 ", section size = %" PRIuPTR ", file size = %" PRIi64,
+				gm_section_name(section_type), (int64_t)offset, section_size + 8, (int64_t)end_offset);
 
 			errno = EINVAL;
 			goto error;
@@ -878,7 +905,7 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 			return -1;
 		}
 
-		if (mkdirs(buf, S_IRWXU) != 0) {
+		if (mkdirs(buf) != 0) {
 			return -1;
 		}
 
