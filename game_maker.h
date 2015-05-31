@@ -118,7 +118,7 @@ struct gm_patched_index {
 
 struct gm_patched_index *gm_get_section(struct gm_patched_index *patched, enum gm_section section);
 size_t                   gm_index_length(const struct gm_index *index);
-int                      gm_patch_archive(const char *filename, struct gm_patch *patches);
+int                      gm_patch_archive(const char *filename, const struct gm_patch *patches);
 int                      gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch);
 int                      gm_shift_tail(struct gm_patched_index *index, off_t offset);
 void                     gm_free_patched_index(struct gm_patched_index *index);

@@ -625,7 +625,7 @@ size_t gm_index_length(const struct gm_index *index) {
 	return len;
 }
 
-int gm_patch_archive(const char *filename, struct gm_patch *patches) {
+int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 	char tmpname[PATH_MAX];
 	FILE *game = NULL;
 	FILE *tmp  = NULL;
@@ -678,7 +678,7 @@ int gm_patch_archive(const char *filename, struct gm_patch *patches) {
 	patched[count].section = GM_END;
 
 	// adjust patch index
-	for (struct gm_patch *ptr = patches; ptr->section != GM_END; ++ ptr) {
+	for (const struct gm_patch *ptr = patches; ptr->section != GM_END; ++ ptr) {
 		struct gm_patched_index *section = gm_get_section(patched, ptr->section);
 		if (!section) {
 			LOG_ERR("archive contains no %s section", gm_section_name(ptr->section));
