@@ -694,6 +694,7 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 	struct gm_patched_index *patched = NULL;
 	int status = 0;
 
+	memset(tmpname, 0, sizeof(tmpname));
 	if (snprintf(tmpname, PATH_MAX, "%s.tmp", filename) < 0) {
 		goto error;
 	}
@@ -872,6 +873,7 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 
 error:
 	status = -1;
+	int errnum = errno;
 
 	if (game) {
 		fclose(game);
@@ -882,6 +884,13 @@ error:
 		fclose(tmp);
 		tmp = NULL;
 	}
+
+	if (tmpname[0]) {
+		unlink(tmpname);
+	}
+
+	// keep the original error
+	errno = errnum;
 
 end:
 
