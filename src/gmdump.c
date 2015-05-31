@@ -19,6 +19,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	gamename = argv[1];
+
+	printf("Reading archive...\n");
 	game = fopen(gamename, "rb");
 	if (!game) {
 		perror(gamename);
@@ -31,10 +33,13 @@ int main(int argc, char *argv[]) {
 		goto error;
 	}
 
+	printf("Dumping files...\n");
 	if (gm_dump_files(index, game, outdir) != 0) {
 		perror(gamename);
 		goto error;
 	}
+
+	printf("Successfully dumped all files.\n");
 
 	goto end;
 
@@ -51,6 +56,11 @@ end:
 		gm_free_index(index);
 		index = NULL;
 	}
+
+#if GM_WINDOWS
+	printf("Press ENTER to continue...");
+	getchar();
+#endif
 
 	return status;
 }
