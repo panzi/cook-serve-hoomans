@@ -967,7 +967,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 			
 			index = strtol(entry->d_name, &endptr, 10);
 			if ((strcasecmp(endptr, ".png") != 0 && strcasecmp(endptr, ".dat") != 0) ||
-				endptr == entry->d_name || index < 0 || index > UINT32_MAX) {
+				endptr == entry->d_name || index < 0 || (unsigned long int)index > UINT32_MAX) {
 				// ignore file
 				continue;
 			}
@@ -1053,7 +1053,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 			
 			index = strtol(entry->d_name, &endptr, 10);
 			if ((strcasecmp(endptr, ".wav") != 0 && strcasecmp(endptr, ".ogg") != 0 && strcasecmp(endptr, ".dat") != 0) ||
-				endptr == entry->d_name || index < 0 || index > UINT32_MAX) {
+				endptr == entry->d_name || index < 0 || (unsigned long int)index > UINT32_MAX) {
 				// ignore file
 				continue;
 			}

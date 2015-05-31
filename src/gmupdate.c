@@ -35,7 +35,7 @@ error:
 
 end:
 
-#if GM_WINDOWS
+#ifdef GM_WINDOWS
 	printf("Press ENTER to continue...");
 	getchar();
 #endif
