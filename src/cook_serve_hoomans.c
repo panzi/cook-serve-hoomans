@@ -20,10 +20,7 @@
 #	define static_assert _Static_assert
 #endif
 
-#define _STR(X) #X
-#define STR(X) _STR(X)
-
-#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#if defined(GM_WINDOWS)
 #	include <windows.h>
 
 int find_archive(char *path, size_t pathlen) {
