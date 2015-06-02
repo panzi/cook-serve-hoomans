@@ -1,0 +1,9 @@
+.*
+*~
+*.o
+*.exe
+*.unx
+*.win
+*.backup
+*.zip
+build/*

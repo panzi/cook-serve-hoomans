@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="400"
+   height="450"
+   viewBox="0 0 400 450"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="logo.svg"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4">
+    <mask
+       maskUnits="userSpaceOnUse"
+       id="mask4371">
+      <path
+         style="display:inline;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m -37.476562,-226.24609 0,104.65039 -82.025388,0 0,310.41992 170.30468,0 A 200,200 0 0 0 200,256 200,200 0 0 0 399.54492,65.08203 l 61.48828,0 0,-291.32812 -498.509762,0 z"
+         id="path4373"
+         inkscape:connector-curvature="0" />
+    </mask>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1"
+     inkscape:cx="401.19371"
+     inkscape:cy="181.32414"
+     inkscape:document-units="px"
+     inkscape:current-layer="g4344"
+     showgrid="true"
+     units="px"
+     borderlayer="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1025"
+     inkscape:window-x="-2"
+     inkscape:window-y="-3"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid3336"
+       spacingx="50"
+       spacingy="50"
+       enabled="false" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Background"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-602.36216)"
+     sodipodi:insensitive="true">
+    <circle
+       style="opacity:1;fill:#2c3e50;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path4215"
+       cx="200"
+       cy="852.36218"
+       r="200" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Hoomans"
+     transform="translate(0,194)">
+    <g
+       id="g4344"
+       mask="url(#mask4371)">
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/angrywelshgamer.png"
+         xlink:href="hoomans/angrywelshgamer.png"
+         transform="matrix(0.98197679,-0.18900157,0.18900157,0.98197679,0,0)"
+         width="120"
+         height="211"
+         preserveAspectRatio="none"
+         id="image4258"
+         x="50.645493"
+         y="-126.66116" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Zac.png"
+         xlink:href="hoomans/Zac.png"
+         transform="matrix(0.94875973,0.31599837,-0.31599837,0.94875973,0,0)"
+         width="116"
+         height="260"
+         preserveAspectRatio="none"
+         id="image4247"
+         x="259.37045"
+         y="-249.05627" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/bradalmighty.png"
+         xlink:href="hoomans/bradalmighty.png"
+         transform="matrix(-0.94400679,0.32992603,0.32992603,0.94400679,0,0)"
+         width="138"
+         height="230"
+         preserveAspectRatio="none"
+         id="image4179"
+         x="-118.44858"
+         y="-67.376259" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Toronto_Girl.png"
+         xlink:href="hoomans/Toronto_Girl.png"
+         transform="matrix(0.98666783,-0.162747,0.162747,0.98666783,0,0)"
+         width="110"
+         height="239"
+         preserveAspectRatio="none"
+         id="image4190"
+         x="130.30328"
+         y="-162.86873" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/TabletopOwlbear2.png"
+         xlink:href="hoomans/TabletopOwlbear2.png"
+         transform="matrix(0.98069448,0.19554625,-0.19554625,0.98069448,0,0)"
+         width="154"
+         height="278"
+         preserveAspectRatio="none"
+         id="image4212"
+         x="159.11221"
+         y="-215.325" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Splattercatt.png"
+         xlink:href="hoomans/Splattercatt.png"
+         transform="matrix(0.9972878,0.07360051,-0.07360051,0.9972878,0,0)"
+         width="120"
+         height="264"
+         preserveAspectRatio="none"
+         id="image4269"
+         x="204.75679"
+         y="-96.652336" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/ZaZu.png"
+         xlink:href="hoomans/ZaZu.png"
+         transform="matrix(0.99092599,-0.13440867,0.13440867,0.99092599,0,0)"
+         width="157"
+         height="254"
+         preserveAspectRatio="none"
+         id="image3368"
+         x="43.232643"
+         y="-64.272842" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/TheAstropath.png"
+         xlink:href="hoomans/TheAstropath.png"
+         width="152"
+         height="240"
+         preserveAspectRatio="none"
+         id="image4225"
+         x="131.9899"
+         y="-75.060966" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Liangelus.png"
+         xlink:href="hoomans/Liangelus.png"
+         transform="matrix(0.89433292,0.44740209,-0.44740209,0.89433292,0,0)"
+         width="162"
+         height="271"
+         preserveAspectRatio="none"
+         id="image4201"
+         x="252.18335"
+         y="-144.93878" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Gil_Ramirez2.png"
+         xlink:href="hoomans/Gil_Ramirez2.png"
+         transform="matrix(0.9577892,-0.28747146,0.28747146,0.9577892,0,0)"
+         width="150"
+         height="205"
+         preserveAspectRatio="none"
+         id="image4236"
+         x="-33.444347"
+         y="66.514267" />
+      <image
+         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/bloody_albatross2.png"
+         xlink:href="hoomans/bloody_albatross2.png"
+         transform="matrix(0.99628653,-0.08609965,0.08609965,0.99628653,0,0)"
+         width="151"
+         height="265"
+         preserveAspectRatio="none"
+         id="image4168"
+         x="81.868446"
+         y="28.545008" />
+    </g>
+  </g>
+</svg>
