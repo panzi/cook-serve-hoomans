@@ -20,17 +20,15 @@ and double click `cook_serve_hoomans.exe`. It should automatically find the
 installation path of Cook, Serve, Delicious! and patch the game archive. If
 everything went well you should see something like this:
 
-![](http://i.imgur.com/xLfBnH0.png)
+![](http://panzi.github.io/cook-serve-hoomans/img/patch_success.png)
 
 Just press enter and you are done.
 
-This patch always needs the original game archive (a file called `data.win` under
-Windows and `game.unx` under Linux) and not an already patched one, otherwise
-patching might fail. Therefore it automatically creates a backup called
-`data.win.backup` in the same directory. When `cook_serve_hoomans.exe` is run a
-second time it will look for that backup file and restore it before patching. If
-you want to get rid of the mod simply delete `data.win` and rename
-`data.win.backup` to `data.win`.
+To be on the safe side this patch creates a backup of the game archive (if none
+exist already). The backup will be placed in the same folder as the game archive
+(`data.win` on Windows and `game.unx` on Linux) and will be called
+`data.win.backup` on Windows and `game.unx.backup` on Linux. If you want to
+remove the patch simply delete `data.win`/`game.unx` and rename the backup file.
 
 ### In case that didn't work
 
@@ -57,18 +55,10 @@ compile a Windows binary under Linux.)
 
 Then simply drag and drop `data.win` onto `cook_serve_hoomans.exe`:
 
-![](http://i.imgur.com/XVC4YIn.png)
+![](http://panzi.github.io/cook-serve-hoomans/img/open_with_cook_serve_hoomans.png)
 
-If everything went well you should see this:
-
-![](http://i.imgur.com/akcgTv9.png)
-
-In case you used `cook_serve_hoomans.exe` v7 or newer before it will detect the
-previously created backup and restors it before applying the patch:
-
-![](http://i.imgur.com/W7QGslM.png)
-
-Just press enter and you are done.
+If everything went well you should see the same dialog as above. Just press enter
+and you are done.
 
 Advanced Usage
 --------------
