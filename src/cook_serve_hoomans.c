@@ -165,8 +165,9 @@ int main(int argc, char *argv[]) {
 			goto error;
 		}
 		game_name = game_name_buf;
-		printf("Patching game archive: %s\n", game_name);
 	}
+
+	printf("Patching game archive: %s\n", game_name);
 
 	// create backup if there isn't one
 	if (snprintf(backup_name, sizeof(backup_name), "%s.backup", game_name) < 0) {

@@ -701,6 +701,7 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 
 	game = fopen(filename, "rb");
 	if (!game) {
+		LOG_ERR("Failed to open archive: %s", filename);
 		goto error;
 	}
 
@@ -759,6 +760,7 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 	// write new archive
 	tmp = fopen(tmpname, "wb");
 	if (!tmp) {
+		LOG_ERR("Failed to open temp file: %s", tmpname);
 		goto error;
 	}
 
@@ -766,7 +768,7 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 	if (gm_write_hdr(tmp, (const uint8_t*)"FORM", form_size) != 0) {
 		goto error;
 	}
-	
+
 	for (struct gm_patched_index *ptr = patched; ptr->section != GM_END; ++ ptr) {
 		uint8_t buffer[8];
 
@@ -859,13 +861,20 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 		game = NULL;
 		goto error;
 	}
-	
+
 	if (fclose(tmp) != 0) {
 		tmp = NULL;
 		goto error;
 	}
 
+	// delete target mainly to make it work on windows:
+	if (unlink(filename) != 0) {
+		LOG_ERR("Failed to remove original game archive: %s", filename);
+		goto error;
+	}
+
 	if (rename(tmpname, filename) != 0) {
+		LOG_ERR("Failed to rename temp file to: %s", filename);
 		goto error;
 	}
 
