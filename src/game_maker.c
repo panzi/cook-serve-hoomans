@@ -94,7 +94,7 @@ static int gm_mkpath(const char *pathname) {
 		return -1;
 	}
 
-	strncat(buf, pathname, sizeof(buf));
+	strncpy(buf, pathname, sizeof(buf));
 
 	char *ptr = buf;
 
@@ -1130,7 +1130,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 				ptr->type = GM_UNKNOWN;
 			}
 
-			ptr->section      = GM_TXTR;
+			ptr->section      = GM_AUDO;
 			ptr->index        = index;
 			ptr->patch_src    = GM_SRC_FILE;
 			ptr->size         = st.st_size;

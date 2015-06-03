@@ -12,11 +12,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-const char *filename(const char *path) {
+static const char *filename(const char *path) {
 	const char *ptr = path + strlen(path) - 1;
 
 	for (; ptr != path; -- ptr) {
-#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#if GM_WINDOWS
 		if (*ptr == '\\' || *ptr == '/') return ptr + 1;
 #else
 		if (*ptr == '/') return ptr + 1;
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 		goto error;
 	}
 
-	printf("Successfully replaced sprites.\n");
+	printf("Successfully patched game.\n");
 
 	goto end;
 
@@ -117,7 +117,7 @@ error:
 
 end:
 
-#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#ifdef GM_WINDOWS
 	printf("Press ENTER to continue...");
 	getchar();
 #endif
