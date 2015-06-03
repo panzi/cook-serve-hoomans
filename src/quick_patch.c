@@ -16,7 +16,7 @@ static const char *filename(const char *path) {
 	const char *ptr = path + strlen(path) - 1;
 
 	for (; ptr != path; -- ptr) {
-#if GM_WINDOWS
+#ifdef GM_WINDOWS
 		if (*ptr == '\\' || *ptr == '/') return ptr + 1;
 #else
 		if (*ptr == '/') return ptr + 1;

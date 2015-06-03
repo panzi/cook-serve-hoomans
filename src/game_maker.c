@@ -943,51 +943,44 @@ end:
 	return status;
 }
 
-int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
-	size_t capacity = 256;
-	struct gm_patch *patches = calloc(capacity, sizeof(struct gm_patch));
-	size_t i = 0;
-	char *endptr = NULL;
-	DIR *dir = NULL;
-	FILE *fp = NULL;
-	struct dirent *entry = NULL;
+struct gm_patch_buf {
+	struct gm_patch *patches;
+	size_t capacity;
+	size_t size;
+};
+
+static int gm_patch_scan_dir(struct gm_patch_buf *pbuf, const char *dirname, const char *subdirname, const char *exts[],
+                             int read_info(FILE *fp, struct gm_patch *patch)) {
 	char namebuf[PATH_MAX];
-	long int index = 0;
+	DIR *dir = NULL;
 	int status = 0;
 
-	if (!patches) {
-		perror("listing files");
-		goto error;
-	}
-
-	if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "txtr") != 0) {
+	if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, subdirname) != 0) {
 		perror("listing files");
 		goto error;
 	}
 
 	dir = opendir(namebuf);
 	if (dir) {
-		struct png_info info;
-
 		for (;;) {
-			if (i + 1 == capacity) {
-				if (SIZE_MAX / (2 * sizeof(struct gm_patch)) < capacity) {
+			if (pbuf->size + 1 == pbuf->capacity) {
+				if (SIZE_MAX / (2 * sizeof(struct gm_patch)) < pbuf->capacity) {
 					errno = ENOMEM;
 					perror("listing files");
 					goto error;
 				}
-				capacity *= 2;
-				struct gm_patch *new_patches = realloc(patches, capacity * sizeof(struct gm_patch));
+				pbuf->capacity *= 2;
+				struct gm_patch *new_patches = realloc(pbuf->patches, pbuf->capacity * sizeof(struct gm_patch));
 				if (!new_patches) {
 					perror("listing files");
 					goto error;
 				}
-				memset(new_patches + i, 0, (capacity - i) * sizeof(struct gm_patch));
-				patches = new_patches;
+				memset(new_patches + pbuf->size, 0, (pbuf->capacity - pbuf->size) * sizeof(struct gm_patch));
+				pbuf->patches = new_patches;
 			}
 
 			errno = 0;
-			entry = readdir(dir);
+			struct dirent *entry = readdir(dir);
 			if (!entry) {
 				if (errno != 0) {
 					perror("listing files");
@@ -996,30 +989,25 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 				break;
 			}
 
-			if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "txtr", entry->d_name) != 0) {
+			if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, subdirname, entry->d_name) != 0) {
 				perror("listing files");
 				goto error;
 			}
 			
-			index = strtol(entry->d_name, &endptr, 10);
-			if ((strcasecmp(endptr, ".png") != 0 && strcasecmp(endptr, ".dat") != 0) ||
-				endptr == entry->d_name || index < 0 || (unsigned long int)index > UINT32_MAX) {
+			char *endptr = NULL;
+			long int index = strtol(entry->d_name, &endptr, 10);
+			bool ext_matches = false;
+			for (const char **ext = exts; *ext; ++ ext) {
+				if (strcasecmp(endptr, *ext) == 0) {
+					ext_matches = true;
+					break;
+				}
+			}
+
+			if (!ext_matches || endptr == entry->d_name || index < 0 || (unsigned long int)index > UINT32_MAX) {
 				// ignore file
 				continue;
 			}
-
-			fp = fopen(namebuf, "rb");
-			if (!fp) {
-				perror(namebuf);
-				goto error;
-			}
-
-			if (parse_png_info(fp, &info) != 0) {
-				perror(namebuf);
-				goto error;
-			}
-			fclose(fp);
-			fp = NULL;
 
 			char *filename = strdup(namebuf);
 			if (!filename) {
@@ -1027,126 +1015,29 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 				goto error;
 			}
 
-			struct gm_patch *ptr = &patches[i];
-			ptr->section      = GM_TXTR;
-			ptr->index        = index;
-			ptr->type         = GM_PNG;
-			ptr->patch_src    = GM_SRC_FILE;
-			ptr->size         = info.filesize;
-			ptr->src.filename = filename;
-			ptr->meta.txtr.width  = info.width;
-			ptr->meta.txtr.height = info.height;
+			struct gm_patch *patch = &pbuf->patches[pbuf->size];
+			patch->index        = index;
+			patch->patch_src    = GM_SRC_FILE;
+			patch->src.filename = filename;
 
-			++ i;
-		}
-	}
-	else if (errno != ENOENT) {
-		perror("listing files");
-		goto error;
-	}
-
-	if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "audo") != 0) {
-		perror("listing files");
-		goto error;
-	}
-
-	dir = opendir(namebuf);
-	if (dir) {
-		struct stat st;
-		char buffer[12];
-
-		for (;;) {
-			if (i + 1 == capacity) {
-				if (SIZE_MAX / (2 * sizeof(struct gm_patch)) < capacity) {
-					errno = ENOMEM;
-					perror("listing files");
-					goto error;
-				}
-				capacity *= 2;
-				struct gm_patch *new_patches = realloc(patches, capacity * sizeof(struct gm_patch));
-				if (!new_patches) {
-					perror("listing files");
-					goto error;
-				}
-				memset(new_patches + i, 0, (capacity - i) * sizeof(struct gm_patch));
-				patches = new_patches;
-			}
-
-			errno = 0;
-			entry = readdir(dir);
-			if (!entry) {
-				if (errno != 0) {
-					perror("listing files");
-					goto error;
-				}
-				break;
-			}
-
-			if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "audo", entry->d_name) != 0) {
-				perror("listing files");
-				goto error;
-			}
-			
-			index = strtol(entry->d_name, &endptr, 10);
-			if ((strcasecmp(endptr, ".wav") != 0 && strcasecmp(endptr, ".ogg") != 0 && strcasecmp(endptr, ".dat") != 0) ||
-				endptr == entry->d_name || index < 0 || (unsigned long int)index > UINT32_MAX) {
-				// ignore file
-				continue;
-			}
-
-			if (stat(namebuf, &st) != 0) {
-				perror(namebuf);
-				goto error;
-			}
-
-			fp = fopen(namebuf, "rb");
+			FILE *fp = fopen(namebuf, "rb");
 			if (!fp) {
 				perror(namebuf);
 				goto error;
 			}
 
-			const size_t count = fread(buffer, 1, sizeof(buffer), fp);
-			if (ferror(fp)) {
+			if (read_info(fp, patch) != 0) {
 				perror(namebuf);
+				fclose(fp);
 				goto error;
 			}
 			fclose(fp);
-			fp = NULL;
 
-			char *filename = strdup(namebuf);
-			if (!filename) {
-				perror(namebuf);
-				goto error;
-			}
-
-			struct gm_patch *ptr = &patches[i];
-			if (count >= 12 && memcmp(buffer, "RIFF", 4) == 0 && memcmp(buffer + 8, "WAVE", 4) == 0) {
-				ptr->type = GM_WAVE;
-			}
-			else if (count >= 4 && memcmp(buffer, "OggS", 4) == 0) {
-				ptr->type = GM_OGG;
-			}
-			else {
-				ptr->type = GM_UNKNOWN;
-			}
-
-			ptr->section      = GM_AUDO;
-			ptr->index        = index;
-			ptr->patch_src    = GM_SRC_FILE;
-			ptr->size         = st.st_size;
-			ptr->src.filename = filename;
-
-			++ i;
+			++ pbuf->size;
 		}
 	}
 	else if (errno != ENOENT) {
 		perror("listing files");
-		goto error;
-	}
-
-	patches[i].section = GM_END;
-
-	if (gm_patch_archive(filename, patches) != 0) {
 		goto error;
 	}
 
@@ -1156,25 +1047,101 @@ error:
 	status = -1;
 
 end:
-	if (fp) {
-		fclose(fp);
-		fp = NULL;
-	}
-
 	if (dir) {
 		closedir(dir);
 		dir = NULL;
 	}
 
-	if (patches) {
-		for (struct gm_patch *patch = patches; patch->section != GM_END; ++ patch) {
+	return status;
+}
+
+static int gm_read_txtr_info(FILE *fp, struct gm_patch *patch) {
+	struct png_info info;
+
+	if (parse_png_info(fp, &info) != 0) {
+		return -1;
+	}
+
+	patch->section          = GM_TXTR;
+	patch->type             = GM_PNG;
+	patch->size             = info.filesize;
+	patch->meta.txtr.width  = info.width;
+	patch->meta.txtr.height = info.height;
+
+	return 0;
+}
+
+static int gm_read_audo_info(FILE *fp, struct gm_patch *patch) {
+	uint8_t buffer[12];
+	struct stat st;
+
+	if (fstat(fileno(fp), &st) != 0) {
+		return -1;
+	}
+
+	const size_t count = fread(buffer, 1, sizeof(buffer), fp);
+	if (ferror(fp)) {
+		return -1;
+	}
+
+	if (count >= 12 && memcmp(buffer, "RIFF", 4) == 0 && memcmp(buffer + 8, "WAVE", 4) == 0) {
+		patch->type = GM_WAVE;
+	}
+	else if (count >= 4 && memcmp(buffer, "OggS", 4) == 0) {
+		patch->type = GM_OGG;
+	}
+	else {
+		patch->type = GM_UNKNOWN;
+	}
+
+	patch->section = GM_AUDO;
+	patch->size    = st.st_size;
+
+	return 0;
+}
+
+int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
+	struct gm_patch_buf pbuf;
+	int status = 0;
+
+	pbuf.capacity = 256;
+	pbuf.size     = 0;
+	pbuf.patches  = calloc(pbuf.capacity, sizeof(struct gm_patch));
+
+	if (!pbuf.patches) {
+		perror("listing files");
+		goto error;
+	}
+
+	if (gm_patch_scan_dir(&pbuf, dirname, "txtr", (const char*[]){".png", ".dat", NULL}, gm_read_txtr_info) != 0) {
+		goto error;
+	}
+
+	if (gm_patch_scan_dir(&pbuf, dirname, "audo", (const char*[]){".wav", ".ogg", ".dat", NULL}, gm_read_audo_info) != 0) {
+		goto error;
+	}
+
+	pbuf.patches[pbuf.size].section = GM_END;
+
+	if (gm_patch_archive(filename, pbuf.patches) != 0) {
+		goto error;
+	}
+
+	goto end;
+
+error:
+	status = -1;
+
+end:
+	if (pbuf.patches) {
+		for (struct gm_patch *patch = pbuf.patches; patch->section != GM_END; ++ patch) {
 			if (patch->src.filename) {
 				free((void*)patch->src.filename);
 				patch->src.filename = NULL;
 			}
 		}
-		free(patches);
-		patches = NULL;
+		free(pbuf.patches);
+		pbuf.patches = NULL;
 	}
 
 	return status;
