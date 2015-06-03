@@ -23,42 +23,52 @@
 #if defined(GM_WINDOWS)
 #	include <windows.h>
 
+#define CSH_DATA_WIN_PATH "\\steamapps\\common\\CookServeDelicious\\data.win"
+
 int find_archive(char *path, size_t pathlen) {
 	HKEY hKey = 0;
 	DWORD dwType = REG_SZ;
 	DWORD dwSize = pathlen;
 
-	if (pathlen < 46) {
+	if (pathlen < sizeof(CSH_DATA_WIN_PATH)) {
+		errno = ENAMETOOLONG;
 		return -1;
 	}
 
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Software\\Valve\\Steam", 0, KEY_QUERY_VALUE, &hKey) != ERROR_SUCCESS) {
+		errno = EINVAL;
 		return -1;
 	}
 
 	if (RegQueryValueEx(hKey, TEXT("InstallPath"), NULL, &dwType, (LPBYTE)path, &dwSize) != ERROR_SUCCESS) {
+		errno = EINVAL;
 		return -1;
 	}
 
-	if (dwType != REG_SZ || dwSize > pathlen - 46) {
+	if (dwType != REG_SZ) {
+		errno = EINVAL;
+		return -1;
+	}
+	else if (dwSize > pathlen - sizeof(CSH_DATA_WIN_PATH)) {
+		errno = ENAMETOOLONG;
 		return -1;
 	}
 
-	strcat(path, "\\steamapps\\common\\CookServeDelicious\\data.win");
+	strcat(path, CSH_DATA_WIN_PATH);
 
 	return 0;
 }
 #else
 int find_archive(char *path, size_t pathlen) {
 	static const char *paths[] = {
-		"/.local/share/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		"/.local/share/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
-		"/.local/share/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		"/.local/share/steam/steamapps/common/CookServeDelicious/assets/game.unx",
-		"/.steam/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		"/.steam/steam/steamapps/common/CookServeDelicious/assets/game.unx",
-		"/.steam/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		"/.steam/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		".local/share/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		".local/share/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		".local/share/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		".local/share/steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		".steam/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		".steam/steam/steamapps/common/CookServeDelicious/assets/game.unx",
+		".steam/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
+		".steam/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
 		NULL
 	};
 	const char *home = getenv("HOME");
@@ -69,8 +79,9 @@ int find_archive(char *path, size_t pathlen) {
 	}
 
 	for (const char **ptr = paths; *ptr; ++ ptr) {
-		if (snprintf(path, pathlen, "%s%s", home, *ptr) < 0) {
-			return -1;
+		if (GM_JOIN_PATH(path, pathlen, home, *ptr) != 0) {
+			// ignore too long paths
+			continue;
 		}
 
 		if (stat(path, &info) < 0) {
@@ -170,7 +181,8 @@ int main(int argc, char *argv[]) {
 	printf("Patching game archive: %s\n", game_name);
 
 	// create backup if there isn't one
-	if (snprintf(backup_name, sizeof(backup_name), "%s.backup", game_name) < 0) {
+	if (GM_CONCAT(backup_name, sizeof(backup_name), game_name, ".backup") != 0) {
+		errno = ENAMETOOLONG;
 		perror("*** ERROR: creatig backup file name");
 		goto error;
 	}

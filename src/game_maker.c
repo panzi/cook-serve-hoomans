@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #define U32LE_FROM_BUF(BUF) ( \
 	 (uint32_t)((BUF)[0])        | \
@@ -86,10 +87,14 @@ static int gm_mkpath(const char *pathname) {
 		return -1;
 	}
 
+	if (strlen(pathname) >= sizeof(buf)) {
+		LOG_ERR("pathname too long: %s", pathname);
 
-	if (snprintf(buf, sizeof(buf), "%s", pathname) < 0) {
+		errno = ENAMETOOLONG;
 		return -1;
 	}
+
+	strncat(buf, pathname, sizeof(buf));
 
 	char *ptr = buf;
 
@@ -716,7 +721,8 @@ int gm_patch_archive(const char *filename, const struct gm_patch *patches) {
 	int status = 0;
 
 	memset(tmpname, 0, sizeof(tmpname));
-	if (snprintf(tmpname, PATH_MAX, "%s.tmp", filename) < 0) {
+	if (GM_CONCAT(tmpname, sizeof(tmpname), filename, ".tmp") != 0) {
+		errno = ENAMETOOLONG;
 		goto error;
 	}
 
@@ -954,7 +960,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 		goto error;
 	}
 
-	if (snprintf(namebuf, sizeof(namebuf), "%s%ctxtr", dirname, GM_PATH_SEP) < 0) {
+	if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "txtr") != 0) {
 		perror("listing files");
 		goto error;
 	}
@@ -990,7 +996,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 				break;
 			}
 
-			if (snprintf(namebuf, sizeof(namebuf), "%s%ctxtr%c%s", dirname, GM_PATH_SEP, GM_PATH_SEP, entry->d_name) < 0) {
+			if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "txtr", entry->d_name) != 0) {
 				perror("listing files");
 				goto error;
 			}
@@ -1039,7 +1045,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 		goto error;
 	}
 
-	if (snprintf(namebuf, sizeof(namebuf), "%s%caudo", dirname, GM_PATH_SEP) < 0) {
+	if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "audo") != 0) {
 		perror("listing files");
 		goto error;
 	}
@@ -1076,7 +1082,7 @@ int gm_patch_archive_from_dir(const char *filename, const char *dirname) {
 				break;
 			}
 
-			if (snprintf(namebuf, sizeof(namebuf), "%s%caudo%c%s", dirname, GM_PATH_SEP, GM_PATH_SEP, entry->d_name) < 0) {
+			if (GM_JOIN_PATH(namebuf, sizeof(namebuf), dirname, "audo", entry->d_name) != 0) {
 				perror("listing files");
 				goto error;
 			}
@@ -1211,7 +1217,7 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 			continue;
 		}
 
-		if (snprintf(buf, sizeof(buf), "%s%c%s", outdir, GM_PATH_SEP, dir) < 0) {
+		if (GM_JOIN_PATH(buf, sizeof(buf), outdir, dir) != 0) {
 			return -1;
 		}
 
@@ -1221,9 +1227,18 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 
 		for (size_t i = 0; i < index->entry_count; ++ i) {
 			const struct gm_entry *entry = &index->entries[i];
-			
-			if (snprintf(buf, sizeof(buf), "%s%c%s%c%04" PRIuPTR "%s",
-			             outdir, GM_PATH_SEP, dir, GM_PATH_SEP, i, gm_extension(entry->type)) < 0) {
+			const char *ext = gm_extension(entry->type);
+			int count = snprintf(buf, sizeof(buf), "%s%c%s%c%04" PRIuPTR "%s",
+			                     outdir, GM_PATH_SEP, dir, GM_PATH_SEP, i, ext);
+
+			if (count < 0) {
+				return -1;
+			}
+			else if ((size_t)count >= sizeof(buf)) {
+				LOG_ERR("Name too long: %s%c%s%c%04" PRIuPTR "%s",
+				        outdir, GM_PATH_SEP, dir, GM_PATH_SEP, i, ext);
+
+				errno = ENAMETOOLONG;
 				return -1;
 			}
 
@@ -1244,6 +1259,71 @@ int gm_dump_files(const struct gm_index *index, FILE *game, const char *outdir) 
 			}
 		}
 	}
+
+	return 0;
+}
+
+int gm_concat(char *buf, size_t size, const char *strs[], size_t nstrs) {
+	size_t ch_index = 0;
+
+	for (size_t strs_index = 0; strs_index < nstrs; ++ strs_index) {
+		const char *str = strs[strs_index];
+
+		size_t strsize = strlen(str);
+		if (strsize >= size || ch_index >= size - strsize) {
+			errno = EINVAL;
+			return -1;
+		}
+
+		memcpy(buf + ch_index, str, strsize);
+		ch_index += strsize;
+	}
+
+	if (ch_index >= size) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	buf[ch_index] = '\0';
+
+	return 0;
+}
+
+int gm_join_path(char *buf, size_t size, const char *comps[], size_t ncomps) {
+	size_t ch_index = 0;
+	bool first = true;
+
+	for (size_t comp_index = 0; comp_index < ncomps; ++ comp_index) {
+		const char *comp = comps[comp_index];
+
+		if (first) {
+			first = false;
+		}
+		else if (ch_index >= size) {
+			errno = ENAMETOOLONG;
+			return -1;
+		}
+		else {
+			buf[ch_index] = GM_PATH_SEP;
+			++ ch_index;
+		}
+
+		size_t complen = strlen(comp);
+		if (complen >= size || ch_index >= size - complen) {
+			errno = ENAMETOOLONG;
+			return -1;
+		}
+
+		memcpy(buf + ch_index, comp, complen);
+		ch_index += complen;
+	}
+
+	if (ch_index >= size) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
+	buf[ch_index] = '\0';
 
 	return 0;
 }
