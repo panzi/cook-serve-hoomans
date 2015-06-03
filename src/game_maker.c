@@ -11,8 +11,13 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <dirent.h>
+#include <ctype.h>
 
-#define U32LE_FROM_BUF(BUF) ((uint32_t)((BUF)[0]) | ((uint32_t)((BUF)[1]) << 8) | ((uint32_t)((BUF)[2]) << 16) | ((uint32_t)((BUF)[3]) << 24))
+#define U32LE_FROM_BUF(BUF) ( \
+	 (uint32_t)((BUF)[0])        | \
+	((uint32_t)((BUF)[1]) <<  8) | \
+	((uint32_t)((BUF)[2]) << 16) | \
+	((uint32_t)((BUF)[3]) << 24))
 
 #define WRITE_U32LE(BUF,N) { \
 	(BUF)[0] =  (uint32_t)(N)        & 0xFF; \
@@ -86,7 +91,29 @@ static int gm_mkpath(const char *pathname) {
 		return -1;
 	}
 
-	for (char *ptr = buf;; ++ ptr) {
+	char *ptr = buf;
+
+#if defined(GM_WINDOWS)
+	// skip UNC prefix or drive letter
+	if (// UNC path
+		(ptr[0] == '\\' && ptr[1] == '\\') ||
+
+		// absolute short path
+		(isalpha(ptr[0]) && ptr[1] == ':'))
+	{
+		ptr += 2;
+	}
+#endif
+
+	for (;; ++ ptr) {
+		// skip redundant path seperators
+#if defined(GM_WINDOWS)
+		while (*ptr == '\\' || *ptr == '/') ++ ptr;
+#else
+		while (*ptr == '/') ++ ptr;
+#endif
+
+		// find end of current path component
 		for (; *ptr; ++ ptr) {
 #if defined(GM_WINDOWS)
 			if (*ptr == '\\' || *ptr == '/') break;
@@ -98,26 +125,20 @@ static int gm_mkpath(const char *pathname) {
 		char ch = *ptr;
 		*ptr = '\0';
 
-#ifdef GM_WINDOWS
-		if (strcmp(buf, "\\") == 0 && strcmp(buf, "\\\\") == 0) {
-#endif
-			if (stat(buf, &st) == 0) {
-				if (!S_ISDIR(st.st_mode)) {
-					LOG_ERR("exists but is not a directory: %s", buf);
+		if (stat(buf, &st) == 0) {
+			if (!S_ISDIR(st.st_mode)) {
+				LOG_ERR("exists but is not a directory: %s", buf);
 
-					errno = ENOTDIR;
-					return -1;
-				}
-			}
-			else if (errno != ENOENT) {
+				errno = ENOTDIR;
 				return -1;
 			}
-			else if (mkdir(buf, S_IRWXU) != 0) {
-				return -1;
-			}
-#ifdef GM_WINDOWS
 		}
-#endif
+		else if (errno != ENOENT) {
+			return -1;
+		}
+		else if (mkdir(buf, S_IRWXU) != 0) {
+			return -1;
+		}
 
 		*ptr = ch;
 		if (!ch) break;
