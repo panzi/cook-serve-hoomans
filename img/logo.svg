@@ -39,8 +39,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="401.19371"
-     inkscape:cy="181.32414"
+     inkscape:cx="441.20862"
+     inkscape:cy="271.02036"
      inkscape:document-units="px"
      inkscape:current-layer="g4344"
      showgrid="true"
@@ -92,114 +92,120 @@
        id="g4344"
        mask="url(#mask4371)">
       <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/angrywelshgamer.png"
          xlink:href="hoomans/angrywelshgamer.png"
-         transform="matrix(0.98197679,-0.18900157,0.18900157,0.98197679,0,0)"
-         width="120"
-         height="211"
-         preserveAspectRatio="none"
+         y="-130.96709"
+         x="49.437542"
          id="image4258"
-         x="50.645493"
-         y="-126.66116" />
-      <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Zac.png"
-         xlink:href="hoomans/Zac.png"
-         transform="matrix(0.94875973,0.31599837,-0.31599837,0.94875973,0,0)"
-         width="116"
-         height="260"
          preserveAspectRatio="none"
-         id="image4247"
-         x="259.37045"
-         y="-249.05627" />
-      <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/bradalmighty.png"
-         xlink:href="hoomans/bradalmighty.png"
-         transform="matrix(-0.94400679,0.32992603,0.32992603,0.94400679,0,0)"
-         width="138"
-         height="230"
-         preserveAspectRatio="none"
-         id="image4179"
-         x="-118.44858"
-         y="-67.376259" />
-      <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Toronto_Girl.png"
-         xlink:href="hoomans/Toronto_Girl.png"
-         transform="matrix(0.98666783,-0.162747,0.162747,0.98666783,0,0)"
-         width="110"
-         height="239"
-         preserveAspectRatio="none"
-         id="image4190"
-         x="130.30328"
-         y="-162.86873" />
-      <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/TabletopOwlbear2.png"
-         xlink:href="hoomans/TabletopOwlbear2.png"
-         transform="matrix(0.98069448,0.19554625,-0.19554625,0.98069448,0,0)"
-         width="154"
-         height="278"
-         preserveAspectRatio="none"
-         id="image4212"
-         x="159.11221"
-         y="-215.325" />
-      <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Splattercatt.png"
-         xlink:href="hoomans/Splattercatt.png"
-         transform="matrix(0.9972878,0.07360051,-0.07360051,0.9972878,0,0)"
+         height="211"
          width="120"
-         height="264"
+         transform="matrix(0.98197679,-0.18900157,0.18900157,0.98197679,0,0)" />
+      <image
+         xlink:href="hoomans/Zac.png"
+         y="-249.05627"
+         x="259.37045"
+         id="image4247"
          preserveAspectRatio="none"
+         height="260"
+         width="116"
+         transform="matrix(0.94875973,0.31599837,-0.31599837,0.94875973,0,0)" />
+      <image
+         xlink:href="hoomans/bradalmighty.png"
+         y="-67.376259"
+         x="-118.44858"
+         id="image4179"
+         preserveAspectRatio="none"
+         height="230"
+         width="138"
+         transform="matrix(-0.94400679,0.32992603,0.32992603,0.94400679,0,0)" />
+      <image
+         xlink:href="hoomans/TabletopOwlbear2.png"
+         y="-250.86499"
+         x="154.52045"
+         id="image4212"
+         preserveAspectRatio="none"
+         height="278"
+         width="154"
+         transform="matrix(0.98069448,0.19554625,-0.19554625,0.98069448,0,0)" />
+      <image
+         xlink:href="hoomans/Splattercatt.png"
+         y="-127.97671"
+         x="194.42323"
          id="image4269"
-         x="204.75679"
-         y="-96.652336" />
+         preserveAspectRatio="none"
+         height="264"
+         width="120"
+         transform="matrix(0.9972878,0.07360051,-0.07360051,0.9972878,0,0)" />
       <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/ZaZu.png"
+         xlink:href="hoomans/Toronto_Girl.png"
+         y="-164.84206"
+         x="130.62878"
+         id="image4190"
+         preserveAspectRatio="none"
+         height="239"
+         width="110"
+         transform="matrix(0.98666783,-0.162747,0.162747,0.98666783,0,0)" />
+      <image
          xlink:href="hoomans/ZaZu.png"
-         transform="matrix(0.99092599,-0.13440867,0.13440867,0.99092599,0,0)"
-         width="157"
-         height="254"
-         preserveAspectRatio="none"
+         y="-66.523506"
+         x="41.519608"
          id="image3368"
-         x="43.232643"
-         y="-64.272842" />
+         preserveAspectRatio="none"
+         height="254"
+         width="157"
+         transform="matrix(0.99092599,-0.13440867,0.13440867,0.99092599,0,0)" />
       <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/TheAstropath.png"
          xlink:href="hoomans/TheAstropath.png"
-         width="152"
-         height="240"
-         preserveAspectRatio="none"
-         id="image4225"
+         y="-93.060966"
          x="131.9899"
-         y="-75.060966" />
+         id="image4225"
+         preserveAspectRatio="none"
+         height="240"
+         width="152" />
       <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Liangelus.png"
+         xlink:href="hoomans/CRandyGamble.png"
+         transform="matrix(0.96057299,0.27802793,-0.27802793,0.96057299,0,0)"
+         width="160"
+         height="274"
+         preserveAspectRatio="none"
+         id="image3358"
+         x="277.55142"
+         y="-97.46125" />
+      <image
+         xlink:href="hoomans/Babrooster.png"
+         width="140"
+         height="197"
+         preserveAspectRatio="none"
+         id="image3369"
+         x="158"
+         y="-30.5" />
+      <image
          xlink:href="hoomans/Liangelus.png"
-         transform="matrix(0.89433292,0.44740209,-0.44740209,0.89433292,0,0)"
-         width="162"
-         height="271"
-         preserveAspectRatio="none"
+         y="-65.854874"
+         x="226.46991"
          id="image4201"
-         x="252.18335"
-         y="-144.93878" />
+         preserveAspectRatio="none"
+         height="271"
+         width="162"
+         transform="matrix(0.93726749,0.34861104,-0.34861104,0.93726749,0,0)" />
       <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/Gil_Ramirez2.png"
          xlink:href="hoomans/Gil_Ramirez2.png"
-         transform="matrix(0.9577892,-0.28747146,0.28747146,0.9577892,0,0)"
-         width="150"
-         height="205"
-         preserveAspectRatio="none"
-         id="image4236"
+         y="66.514267"
          x="-33.444347"
-         y="66.514267" />
-      <image
-         sodipodi:absref="/home/panzi/src/cook_serve_hoomans/patch/img/hoomans/bloody_albatross2.png"
-         xlink:href="hoomans/bloody_albatross2.png"
-         transform="matrix(0.99628653,-0.08609965,0.08609965,0.99628653,0,0)"
-         width="151"
-         height="265"
+         id="image4236"
          preserveAspectRatio="none"
+         height="205"
+         width="150"
+         transform="matrix(0.9577892,-0.28747146,0.28747146,0.9577892,0,0)" />
+      <image
+         xlink:href="hoomans/bloody_albatross2.png"
+         y="56.149517"
+         x="80.514908"
          id="image4168"
-         x="81.868446"
-         y="28.545008" />
+         preserveAspectRatio="none"
+         height="265"
+         width="151"
+         transform="matrix(0.99628653,-0.08609965,0.08609965,0.99628653,0,0)" />
     </g>
   </g>
 </svg>
