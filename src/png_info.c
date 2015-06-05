@@ -1,6 +1,7 @@
 #include "png_info.h"
 
 #include <string.h>
+#include <errno.h>
 
 #if defined(__linux__) || defined(__CYGWIN__)
 
@@ -147,6 +148,7 @@ int parse_png_info(FILE *file, struct png_info *info) {
 	}
 
 	if (memcmp(signature, PNG_SIGNATURE, PNG_SIGNATURE_SIZE) != 0) {
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -162,36 +164,43 @@ int parse_png_info(FILE *file, struct png_info *info) {
 	ihdr.crc    = be32toh(ihdr.crc);
 
 	if (ihdr.size != 13) {
+		errno = EINVAL;
 		return -1;
 	}
 
 	if (memcmp(ihdr.magic, "IHDR", 4) != 0) {
+		errno = EINVAL;
 		return -1;
 	}
 
 	filesize = PNG_SIGNATURE_SIZE + PNG_IHDR_SIZE;
 	
 	if (ihdr.width > INT32_MAX || ihdr.height > INT32_MAX) {
+		errno = EINVAL;
 		return -1;
 	}
 	
 	if (ihdr.bitdepth != 1 && ihdr.bitdepth != 2 &&
 		ihdr.bitdepth != 4 && ihdr.bitdepth != 8 &&
 		ihdr.bitdepth != 16) {
+		errno = EINVAL;
 		return -1;
 	}
 	
 	if (ihdr.colortype != 0 && ihdr.colortype != 2 &&
 		ihdr.colortype != 3 && ihdr.colortype != 4 &&
 		ihdr.colortype != 6) {
+		errno = EINVAL;
 		return -1;
 	}
 
 	if (ihdr.compression != 0 || ihdr.filter != 0) {
+		errno = EINVAL;
 		return -1;
 	}
 	
 	if (ihdr.interlace != 0 && ihdr.interlace != 1) {
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -205,12 +214,14 @@ int parse_png_info(FILE *file, struct png_info *info) {
 		chunk_header.size = be32toh(chunk_header.size);
 
 		if (!IS_PNG_CHUNK_MAGIC(chunk_header.magic)) {
+			errno = EINVAL;
 			return -1;
 		}
 
 		// overflow check, 12 = sizeof(size + magic + crc)
 		if (filesize          > (SIZE_MAX - 12) ||
 			chunk_header.size > (SIZE_MAX - 12 - filesize)) {
+			errno = EINVAL;
 			return -1;
 		}
 		filesize += chunk_header.size + 12;
@@ -220,6 +231,7 @@ int parse_png_info(FILE *file, struct png_info *info) {
 		}
 
 		if (memcmp(chunk_header.magic, "IEND", 4) == 0) {
+			errno = EINVAL;
 			break;
 		}
 	}
