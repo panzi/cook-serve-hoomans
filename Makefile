@@ -30,6 +30,9 @@ UPD_OBJ=$(BUILDDIR)/gmupdate.o \
         $(BUILDDIR)/game_maker.o \
         $(BUILDDIR)/png_info.o
 
+RES_OBJ=$(BUILDDIR)/make_resource.o \
+        $(BUILDDIR)/png_info.o
+
 ifeq ($(TARGET),win32)
 	CC=i686-w64-mingw32-gcc
 	ARCH_FLAGS=-m32
@@ -52,7 +55,7 @@ endif
 endif
 endif
 
-.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate patch setup
+.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate make_resource patch setup
 
 all: cook_serve_hoomans quick_patch gmdump gmupdate
 
@@ -63,6 +66,8 @@ quick_patch: $(BUILDDIR)/quick_patch$(BINEXT)
 gmdump: $(BUILDDIR)/gmdump$(BINEXT)
 
 gmupdate: $(BUILDDIR)/gmupdate$(BINEXT)
+
+make_resource: $(BUILDDIR)/make_resource$(BINEXT)
 
 setup:
 	mkdir -p $(BUILDDIR)
@@ -96,6 +101,9 @@ $(BUILDDIR)/gmdump$(BINEXT): $(DMP_OBJ)
 
 $(BUILDDIR)/gmupdate$(BINEXT): $(UPD_OBJ)
 	$(CC) $(ARCH_FLAGS) $(UPD_OBJ) -o $@
+
+$(BUILDDIR)/make_resource$(BINEXT): $(RES_OBJ)
+	$(CC) $(ARCH_FLAGS) $(RES_OBJ) -o $@
 
 clean:
 	rm -f \
