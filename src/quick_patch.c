@@ -8,9 +8,6 @@
 #include <string.h>
 #include <strings.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 static const char *filename(const char *path) {
 	const char *ptr = path + strlen(path) - 1;
