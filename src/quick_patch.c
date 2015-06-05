@@ -23,18 +23,34 @@ static const char *filename(const char *path) {
 	return path;
 }
 
-static int parse_png_info_from_file(const char *filename, struct png_info *info) {
+static int load_txtr_info(const char *filename, size_t index, struct gm_patch *patch) {
+	struct png_info info;
 	FILE *fp = fopen(filename, "rb");
 
 	if (!fp) {
 		return -1;
 	}
 
-	int status = parse_png_info(fp, info);
+	int status = parse_png_info(fp, &info);
+	int errnum = errno;
 
 	fclose(fp);
+	errno = errnum;
 
-	return status;
+	if (status != 0) {
+		return -1;
+	}
+
+	patch->section      = GM_TXTR;
+	patch->index        = index;
+	patch->type         = GM_PNG;
+	patch->patch_src    = GM_SRC_FILE;
+	patch->src.filename = filename;
+	patch->size         = info.filesize;
+	patch->meta.txtr.width  = info.width;
+	patch->meta.txtr.height = info.height;
+
+	return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -42,7 +58,6 @@ int main(int argc, char *argv[]) {
 	const char *game_filename    = NULL;
 	const char *icons_filename   = NULL;
 	const char *hoomans_filename = NULL;
-	struct png_info info;
 
 	struct gm_patch patches[] = {
 		GM_PATCH_END,
@@ -83,34 +98,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (icons_filename) {
-		if (parse_png_info_from_file(icons_filename, &info) != 0) {
+		if (load_txtr_info(icons_filename, CSH_ICONS_INDEX, patch) != 0) {
 			perror(icons_filename);
 			goto error;
 		}
-		patch->section      = GM_TXTR;
-		patch->index        = CSH_ICONS_INDEX;
-		patch->type         = GM_PNG;
-		patch->patch_src    = GM_SRC_FILE;
-		patch->src.filename = icons_filename;
-		patch->size         = info.filesize;
-		patch->meta.txtr.width  = info.width;
-		patch->meta.txtr.height = info.height;
 		patch ++;
 	}
 
 	if (hoomans_filename) {
-		if (parse_png_info_from_file(hoomans_filename, &info) != 0) {
+		if (load_txtr_info(hoomans_filename, CSH_HOOMANS_INDEX, patch) != 0) {
 			perror(hoomans_filename);
 			goto error;
 		}
-		patch->section      = GM_TXTR;
-		patch->index        = CSH_HOOMANS_INDEX;
-		patch->type         = GM_PNG;
-		patch->patch_src    = GM_SRC_FILE;
-		patch->src.filename = hoomans_filename;
-		patch->size         = info.filesize;
-		patch->meta.txtr.width  = info.width;
-		patch->meta.txtr.height = info.height;
 		patch ++;
 	}
 
