@@ -152,8 +152,8 @@ end:
 
 int main(int argc, char *argv[]) {
 	const struct gm_patch patches[] = {
-		GM_PATCH_TXTR(CSH_ICONS_INDEX,   icons_png,   icons_png_len,   CSH_ICONS_WIDTH,   CSH_ICONS_HEIGHT),
-		GM_PATCH_TXTR(CSH_HOOMANS_INDEX, hoomans_png, hoomans_png_len, CSH_HOOMANS_WIDTH, CSH_HOOMANS_HEIGHT),
+		GM_PATCH_TXTR(CSH_ICONS_INDEX,   csh_icons,   CSH_ICONS_SIZE,   CSH_ICONS_WIDTH,   CSH_ICONS_HEIGHT),
+		GM_PATCH_TXTR(CSH_HOOMANS_INDEX, csh_hoomans, CSH_HOOMANS_SIZE, CSH_HOOMANS_WIDTH, CSH_HOOMANS_HEIGHT),
 		GM_PATCH_END
 	};
 

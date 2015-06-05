@@ -1,6 +1,5 @@
 CC=gcc
 CONVERT=convert
-XXD=xxd
 BINEXT=
 TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
 BUILDDIR=build/$(TARGET)
@@ -75,11 +74,11 @@ setup:
 patch: $(BUILDDIR)/cook_serve_hoomans$(BINEXT)
 	$<
 
-$(BUILDDIR)/%_png.c: %.png
-	$(XXD) -i $< > $@
+$(BUILDDIR)/%_png.c: %.png $(BUILDDIR)/make_resource$(BINEXT)
+	$(BUILDDIR)/make_resource$(BINEXT) csh_$(shell basename $< .png) $< $(basename $@).h $@
 
-$(BUILDDIR)/%_png.h: %.png ./mkheader.sh
-	./mkheader.sh $< $@
+$(BUILDDIR)/%_png.h: $(BUILDDIR)/%_png.c
+	
 
 $(BUILDDIR)/%.o: src/%.c
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@

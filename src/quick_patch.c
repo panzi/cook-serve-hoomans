@@ -26,12 +26,26 @@ static const char *filename(const char *path) {
 	return path;
 }
 
+static int parse_png_info_from_file(const char *filename, struct png_info *info) {
+	FILE *fp = fopen(filename, "rb");
+
+	if (!fp) {
+		return -1;
+	}
+
+	int status = parse_png_info(fp, info);
+
+	fclose(fp);
+
+	return status;
+}
+
 int main(int argc, char *argv[]) {
 	int status = EXIT_SUCCESS;
 	const char *game_filename    = NULL;
 	const char *icons_filename   = NULL;
 	const char *hoomans_filename = NULL;
-	struct stat st;
+	struct png_info info;
 
 	struct gm_patch patches[] = {
 		GM_PATCH_END,
@@ -72,7 +86,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (icons_filename) {
-		if (stat(icons_filename, &st) != 0) {
+		if (parse_png_info_from_file(icons_filename, &info) != 0) {
 			perror(icons_filename);
 			goto error;
 		}
@@ -81,14 +95,14 @@ int main(int argc, char *argv[]) {
 		patch->type         = GM_PNG;
 		patch->patch_src    = GM_SRC_FILE;
 		patch->src.filename = icons_filename;
-		patch->size         = st.st_size;
-		patch->meta.txtr.width  = CSH_ICONS_WIDTH;
-		patch->meta.txtr.height = CSH_ICONS_HEIGHT;
+		patch->size         = info.filesize;
+		patch->meta.txtr.width  = info.width;
+		patch->meta.txtr.height = info.height;
 		patch ++;
 	}
 
 	if (hoomans_filename) {
-		if (stat(hoomans_filename, &st) != 0) {
+		if (parse_png_info_from_file(hoomans_filename, &info) != 0) {
 			perror(hoomans_filename);
 			goto error;
 		}
@@ -97,9 +111,9 @@ int main(int argc, char *argv[]) {
 		patch->type         = GM_PNG;
 		patch->patch_src    = GM_SRC_FILE;
 		patch->src.filename = hoomans_filename;
-		patch->size         = st.st_size;
-		patch->meta.txtr.width  = CSH_HOOMANS_WIDTH;
-		patch->meta.txtr.height = CSH_HOOMANS_HEIGHT;
+		patch->size         = info.filesize;
+		patch->meta.txtr.width  = info.width;
+		patch->meta.txtr.height = info.height;
 		patch ++;
 	}
 
