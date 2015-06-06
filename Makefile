@@ -83,18 +83,19 @@ patch: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 	$<
 
 pkg: VERSION=$(shell git describe --tags)
-pkg: $(BUILDDIR_BIN)/advanced-utils-$(VERSION)-$(TARGET).zip cook_serve_hoomans
+pkg: $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip cook_serve_hoomans
 
-$(BUILDDIR_BIN)/advanced-utils-$(VERSION)-$(TARGET).zip: quick_patch gmdump gmupdate
-	mkdir -p $(BUILDDIR_BIN)/advanced-utils-$(VERSION)-$(TARGET)
+$(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip: quick_patch gmdump gmupdate
+	mkdir -p $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
 	cp \
 		README.md \
 		$(BUILDDIR_BIN)/quick_patch$(BINEXT) \
 		$(BUILDDIR_BIN)/gmdump$(BINEXT) \
 		$(BUILDDIR_BIN)/gmupdate$(BINEXT) \
-		$(BUILDDIR_BIN)/advanced-utils-$(VERSION)-$(TARGET)
-	cd $(BUILDDIR_BIN); zip -r9 advanced-utils-$(VERSION)-$(TARGET).zip advanced-utils-$(VERSION)-$(TARGET)
-	rm -r $(BUILDDIR_BIN)/advanced-utils-$(VERSION)-$(TARGET)
+		$(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
+	cd $(BUILDDIR_BIN); zip -r9 utils-for-advanced-users-$(VERSION)-$(TARGET).zip \
+		utils-for-advanced-users-$(VERSION)-$(TARGET)
+	rm -r $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
 
 $(BUILDDIR_SRC)/%_png.c: images/%.png $(BUILDDIR_BIN)/make_resource$(BINEXT)
 	$(BUILDDIR_BIN)/make_resource$(BINEXT) csh_$(shell basename $< .png) $< $(basename $@).h $@
