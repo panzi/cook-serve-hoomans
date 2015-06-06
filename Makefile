@@ -55,6 +55,8 @@ endif
 
 .PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate make_resource patch setup
 
+# keep intermediary files (e.g. hoomans_png.c) to
+# do less redundant work (when cross compiling):
 .SECONDARY:
 
 all: cook_serve_hoomans quick_patch gmdump gmupdate
@@ -75,7 +77,7 @@ setup:
 patch: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 	$<
 
-$(BUILDDIR_SRC)/%_png.c: %.png $(BUILDDIR_BIN)/make_resource$(BINEXT)
+$(BUILDDIR_SRC)/%_png.c: images/%.png $(BUILDDIR_BIN)/make_resource$(BINEXT)
 	$(BUILDDIR_BIN)/make_resource$(BINEXT) csh_$(shell basename $< .png) $< $(basename $@).h $@
 
 $(BUILDDIR_SRC)/%_png.h: $(BUILDDIR_SRC)/%_png.c;
