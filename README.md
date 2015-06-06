@@ -111,9 +111,10 @@ How It Works
 
 Cook, Serve, Delicious! uses [Game Maker](http://www.yoyogames.com/studio) from
 YoYo Games. At first I didn't bother reverse engineering the archive file format
-of this game engine, but because the file size replacement sprite got bigger than
-the file size of the original I had to reverse engineer at least a bit so I
-could rewrite the archive properly.
+of this game engine, but because the file size of the replacement sprite got
+bigger than the file size of the original I had to reverse engineer at least a
+bit so I could rewrite the archive properly (instead of just overwriting the
+proportion of the archive containing the sprite).
 
 This program understands the overall structure of Game Maker archives and the
 detailed structure of the TXTR and AUDO sections. These are the last two
@@ -129,10 +130,9 @@ creates a `data.win.backup` file which you can use in case the game stops
 working. Just remove `data.win` and rename `data.win.backup` to `data.win`.
 
 Because Felicia uses Windows and one cannot assume the availability of any sane
-scripting language (like Python) on an arbitrary Windows installation I wrote a
-self contained C program that writes the images into the file it gets passed as
-its first argument. Cross compiling simple C/C++ programs for Windows under
-Linux is easy.
+scripting language (like Python) on an arbitrary Windows installation I wrote
+this patch as a self contained C program. Cross compiling simple C/C++ programs
+for Windows under Linux is easy.
 
 However, it is very very cumbersome to cross compile stuff for Mac under Linux
 (the setup still requires access to a Mac and an Apple developer account), so I
