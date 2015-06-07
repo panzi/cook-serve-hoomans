@@ -121,7 +121,7 @@ detailed structure of the TXTR and AUDO sections. These are the last two
 sections in the archive, so when the TXTR section needs resizing absolute
 offsets in this section and the following section (AUDO) need to be adjusted.
 There don't seem to be any offsets to parts of those sections in other places.
-I will document what I know about this file format later.
+All I know about this file format is documented in [fileformat.txt](fileformat.txt).
 
 I don't know what will happen when there is a game update. Will the updater
 corrupt the archive, bail because the file isn't what it expects it to be or
