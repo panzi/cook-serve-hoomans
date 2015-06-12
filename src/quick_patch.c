@@ -55,11 +55,13 @@ static int load_txtr_info(const char *filename, size_t index, struct gm_patch *p
 
 int main(int argc, char *argv[]) {
 	int status = EXIT_SUCCESS;
-	const char *game_filename    = NULL;
-	const char *icons_filename   = NULL;
-	const char *hoomans_filename = NULL;
+	const char *game_filename     = NULL;
+	const char *catering_filename = NULL;
+	const char *icons_filename    = NULL;
+	const char *hoomans_filename  = NULL;
 
 	struct gm_patch patches[] = {
+		GM_PATCH_END,
 		GM_PATCH_END,
 		GM_PATCH_END,
 		GM_PATCH_END
@@ -67,7 +69,7 @@ int main(int argc, char *argv[]) {
 	struct gm_patch *patch = patches;
 
 	if (argc < 3) {
-		fprintf(stderr, "*** ERROR: Please pass %s, hoomans.png and/or icons.png to this program.\n", CSH_GAME_ARCHIVE);
+		fprintf(stderr, "*** ERROR: Please pass %s, hoomans.png, catering.png, and/or icons.png to this program.\n", CSH_GAME_ARCHIVE);
 		goto error;
 	}
 
@@ -77,6 +79,9 @@ int main(int argc, char *argv[]) {
 
 		if (strcasecmp(name, "game.unx") == 0 || strcasecmp(name, "data.win") == 0) {
 			game_filename = path;
+		}
+		else if (strcasecmp(name, "catering.png") == 0) {
+			catering_filename = path;
 		}
 		else if (strcasecmp(name, "hoomans.png") == 0) {
 			hoomans_filename = path;
@@ -92,9 +97,17 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if (!game_filename || (!icons_filename && !hoomans_filename)) {
+	if (!game_filename || (!catering_filename && !icons_filename && !hoomans_filename)) {
 		fprintf(stderr, "*** ERROR: please pass %s, hoomans.png and/or icons.png to this program.\n", CSH_GAME_ARCHIVE);
 		goto error;
+	}
+
+	if (catering_filename) {
+		if (load_txtr_info(catering_filename, CSH_CATERING_INDEX, patch) != 0) {
+			perror(catering_filename);
+			goto error;
+		}
+		patch ++;
 	}
 
 	if (icons_filename) {

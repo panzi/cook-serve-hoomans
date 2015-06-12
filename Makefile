@@ -23,6 +23,7 @@ CSH_OBJ=$(BUILDDIR_BIN)/cook_serve_hoomans.o \
         $(BUILDDIR_BIN)/game_maker.o \
         $(BUILDDIR_BIN)/png_info.o \
         $(BUILDDIR_BIN)/hoomans_png.o \
+        $(BUILDDIR_BIN)/catering_png.o \
         $(BUILDDIR_BIN)/icons_png.o
 
 DMP_OBJ=$(BUILDDIR_BIN)/gmdump.o \
@@ -111,6 +112,7 @@ $(BUILDDIR_BIN)/%.o: $(BUILDDIR_SRC)/%.c
 $(BUILDDIR_BIN)/cook_serve_hoomans.o: \
 		src/cook_serve_hoomans.c \
 		$(BUILDDIR_SRC)/hoomans_png.h \
+		$(BUILDDIR_SRC)/catering_png.h \
 		$(BUILDDIR_SRC)/icons_png.h
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
@@ -133,6 +135,8 @@ clean:
 	rm -f \
 		$(BUILDDIR_SRC)/hoomans_png.h \
 		$(BUILDDIR_SRC)/hoomans_png.c \
+		$(BUILDDIR_SRC)/catering_png.h \
+		$(BUILDDIR_SRC)/catering_png.c \
 		$(BUILDDIR_SRC)/icons_png.h \
 		$(BUILDDIR_SRC)/icons_png.c \
 		$(BUILDDIR_BIN)/patch_game.o \
@@ -141,6 +145,7 @@ clean:
 		$(BUILDDIR_BIN)/gmdump.o \
 		$(BUILDDIR_BIN)/gmupdate.o \
 		$(BUILDDIR_BIN)/hoomans_png.o \
+		$(BUILDDIR_BIN)/catering_png.o \
 		$(BUILDDIR_BIN)/icons_png.o \
 		$(BUILDDIR_BIN)/game_maker.o \
 		$(BUILDDIR_BIN)/png_info.o \

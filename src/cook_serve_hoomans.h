@@ -8,7 +8,8 @@
 #	define CSH_GAME_ARCHIVE "game.unx"
 #endif
 
-#define CSH_ICONS_INDEX   41
-#define CSH_HOOMANS_INDEX 46
+#define CSH_CATERING_INDEX 16
+#define CSH_ICONS_INDEX    41
+#define CSH_HOOMANS_INDEX  46
 
 #endif
