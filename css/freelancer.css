@@ -112,6 +112,10 @@ header .intro-text .skills {
     font-weight: 300;
 }
 
+.btn.btn-download {
+    white-space: normal;
+}
+
 @media(min-width:768px) {
     header .container {
         padding-top: 200px;
@@ -204,6 +208,11 @@ section.success a.active {
 
     section.first {
         padding-top: 75px;
+    }
+
+    .navbar-brand {
+        font-size: 18px;
+        padding: 19.5px 12px;
     }
 }
 
