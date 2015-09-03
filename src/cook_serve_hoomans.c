@@ -26,41 +26,73 @@
 
 #define CSH_DATA_WIN_PATH "\\steamapps\\common\\CookServeDelicious\\data.win"
 
-int find_archive(char *path, size_t pathlen) {
-	HKEY hKey = 0;
+struct reg_path {
+	HKEY    hKey;
+	LPCTSTR lpSubKey;
+	LPCTSTR lpValueName;
+};
+
+static int get_path_from_registry(HKEY hKey, LPCTSTR lpSubKey, LPCTSTR lpValueName, char *path, size_t pathlen) {
+	HKEY hSubKey = 0;
 	DWORD dwType = REG_SZ;
 	DWORD dwSize = pathlen;
 
 	if (pathlen < sizeof(CSH_DATA_WIN_PATH)) {
-		errno = ENAMETOOLONG;
-		return -1;
+		return ENAMETOOLONG;
 	}
 
-	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Software\\Valve\\Steam", 0, KEY_QUERY_VALUE, &hKey) != ERROR_SUCCESS) {
-		errno = EINVAL;
-		return -1;
+	if (RegOpenKeyEx(hKey, lpSubKey, 0, KEY_QUERY_VALUE, &hSubKey) != ERROR_SUCCESS) {
+		return EINVAL;
 	}
 
-	if (RegQueryValueEx(hKey, TEXT("InstallPath"), NULL, &dwType, (LPBYTE)path, &dwSize) != ERROR_SUCCESS) {
-		errno = EINVAL;
-		return -1;
+	if (RegQueryValueEx(hSubKey, lpValueName, NULL, &dwType, (LPBYTE)path, &dwSize) != ERROR_SUCCESS) {
+		return EINVAL;
 	}
 
 	if (dwType != REG_SZ) {
-		errno = EINVAL;
-		return -1;
+		return EINVAL;
 	}
 	else if (dwSize > pathlen - sizeof(CSH_DATA_WIN_PATH)) {
-		errno = ENAMETOOLONG;
-		return -1;
+		return ENAMETOOLONG;
 	}
 
 	strcat(path, CSH_DATA_WIN_PATH);
 
 	return 0;
 }
+
+static int find_archive(char *path, size_t pathlen) {
+	static const struct reg_path reg_paths[] = {
+		// Have confirmed sigthing of these keys:
+		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Valve\\Steam"),              TEXT("InstallPath") },
+		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("InstallPath") },
+		{ HKEY_CURRENT_USER,  TEXT("Software\\Valve\\Steam"),              TEXT("SteamPath")   },
+
+		// All the other possible combination, just to to try everything:
+		{ HKEY_CURRENT_USER,  TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("SteamPath")   },
+		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Valve\\Steam"),              TEXT("SteamPath")   },
+		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("SteamPath")   },
+		{ HKEY_CURRENT_USER,  TEXT("Software\\Valve\\Steam"),              TEXT("InstallPath") },
+		{ HKEY_CURRENT_USER,  TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("InstallPath") },
+		{ 0,                  0,                                           0                   }
+	};
+
+	for (const struct reg_path* reg_path = reg_paths; reg_path->lpSubKey; ++ reg_path) {
+		int errnum = get_path_from_registry(reg_path->hKey, reg_path->lpSubKey, reg_path->lpValueName, path, pathlen);
+		if (errnum == 0) {
+			return 0;
+		}
+		else if (errnum != EINVAL) {
+			errno = errnum;
+			return -1;
+		}
+	}
+
+	errno = EINVAL;
+	return -1;
+}
 #else
-int find_archive(char *path, size_t pathlen) {
+static int find_archive(char *path, size_t pathlen) {
 	static const char *paths[] = {
 		".local/share/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
 		".local/share/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
