@@ -54,6 +54,18 @@ else
 ifeq ($(TARGET),linux64)
 	CFLAGS=$(POSIX_CFLAGS)
 	ARCH_FLAGS=-m64
+else
+ifeq ($(TARGET),darwin32)
+	CC=clang
+	CFLAGS=$(POSIX_CFLAGS)
+	ARCH_FLAGS=-m32
+else
+ifeq ($(TARGET),darwin64)
+	CC=clang
+	CFLAGS=$(POSIX_CFLAGS)
+	ARCH_FLAGS=-m64
+endif
+endif
 endif
 endif
 endif
