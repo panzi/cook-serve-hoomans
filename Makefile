@@ -11,7 +11,7 @@ ifeq ($(DEBUG),ON)
 else
 	COMMON_CFLAGS+=-O2
 endif
-POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic -fdiagnostics-color
+POSIX_CFLAGS=$(COMMON_CFLAGS) -pedantic -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color
 CFLAGS=$(COMMON_CFLAGS)
 ARCH_FLAGS=
 
