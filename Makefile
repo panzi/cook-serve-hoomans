@@ -105,13 +105,13 @@ pkg: $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip $(EXT_DEP
 macpkg: VERSION=$(shell git describe --tags)
 macpkg: $(BUILDDIR_BIN)/cook_serve_hoomans_$(VERSION)_mac.zip
 
-$(BUILDDIR_BIN)/cook_serve_hoomans_$(VERSION)_mac.zip: $(BUILDDIR_BIN)/cook_serve_hoomans $(BUILDDIR_BIN)/cook_serve_hoomans.command
+$(BUILDDIR_BIN)/cook_serve_hoomans_$(VERSION)_mac.zip: $(BUILDDIR_BIN)/cook_serve_hoomans $(BUILDDIR_BIN)/cook_serve_hoomans.command $(BUILDDIR_BIN)/open_with_cook_serve_hoomans.command
 	mkdir -p $(BUILDDIR_BIN)/bin
 	cp $(BUILDDIR_BIN)/cook_serve_hoomans $(BUILDDIR_BIN)/bin
-	cd $(BUILDDIR_BIN); zip -r9 cook_serve_hoomans_$(VERSION)_mac.zip bin cook_serve_hoomans.command
+	cd $(BUILDDIR_BIN); zip -r9 cook_serve_hoomans_$(VERSION)_mac.zip bin cook_serve_hoomans.command open_with_cook_serve_hoomans.command
 	rm -r $(BUILDDIR_BIN)/bin
 
-$(BUILDDIR_BIN)/cook_serve_hoomans.command: osx/cook_serve_hoomans.command
+$(BUILDDIR_BIN)/%.command: osx/%.command
 	cp $< $@
 
 $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip: quick_patch gmdump gmupdate
@@ -181,4 +181,8 @@ clean:
 		$(BUILDDIR_BIN)/quick_patch$(BINEXT) \
 		$(BUILDDIR_BIN)/gmdump$(BINEXT) \
 		$(BUILDDIR_BIN)/gmupdate$(BINEXT) \
-		$(BUILDDIR_BIN)/make_resource$(BINEXT)
+		$(BUILDDIR_BIN)/make_resource$(BINEXT) \
+		$(BUILDDIR_BIN)/cook_serve_hoomans.command \
+		$(BUILDDIR_BIN)/open_with_cook_serve_hoomans.command \
+		$(BUILDDIR_BIN)/cook_serve_hoomans_$(VERSION)_mac.zip \
+		$(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip
