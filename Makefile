@@ -61,13 +61,13 @@ ifeq ($(TARGET),darwin32)
 	CC=clang
 	CFLAGS=$(POSIX_CFLAGS)
 	ARCH_FLAGS=-m32
-	EXT_DEP=macapp
+	EXT_DEP=macpkg
 else
 ifeq ($(TARGET),darwin64)
 	CC=clang
 	CFLAGS=$(POSIX_CFLAGS)
 	ARCH_FLAGS=-m64
-	EXT_DEP=macapp
+	EXT_DEP=macpkg
 endif
 endif
 endif
@@ -75,13 +75,13 @@ endif
 endif
 endif
 
-.PHONY: all macapp clean cook_serve_hoomans quick_patch gmdump gmupdate make_resource patch setup pkg
+.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate make_resource patch setup pkg
 
 # keep intermediary files (e.g. hoomans_png.c) to
 # do less redundant work (when cross compiling):
 .SECONDARY:
 
-all: $(EXT_DEP) cook_serve_hoomans quick_patch gmdump gmupdate
+all: cook_serve_hoomans quick_patch gmdump gmupdate
 
 cook_serve_hoomans: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 
@@ -93,8 +93,6 @@ gmupdate: $(BUILDDIR_BIN)/gmupdate$(BINEXT)
 
 make_resource: $(BUILDDIR_BIN)/make_resource$(BINEXT)
 
-macapp: $(BUILDDIR_BIN)/cook_serve_hoomans_mac.zip
-
 setup:
 	mkdir -p $(BUILDDIR_BIN) $(BUILDDIR_SRC)
 
@@ -102,12 +100,15 @@ patch: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 	$<
 
 pkg: VERSION=$(shell git describe --tags)
-pkg: $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip cook_serve_hoomans
+pkg: $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip $(EXT_DEP) cook_serve_hoomans
 
-$(BUILDDIR_BIN)/cook_serve_hoomans_mac.zip: $(BUILDDIR_BIN)/cook_serve_hoomans $(BUILDDIR_BIN)/cook_serve_hoomans.command
+macpkg: VERSION=$(shell git describe --tags)
+macpkg: $(BUILDDIR_BIN)/cook_serve_hoomans_$(VERSION)_mac.zip
+
+$(BUILDDIR_BIN)/cook_serve_hoomans_$(VERSION)_mac.zip: $(BUILDDIR_BIN)/cook_serve_hoomans $(BUILDDIR_BIN)/cook_serve_hoomans.command
 	mkdir -p $(BUILDDIR_BIN)/bin
 	cp $(BUILDDIR_BIN)/cook_serve_hoomans $(BUILDDIR_BIN)/bin
-	cd $(BUILDDIR_BIN); zip -r9 cook_serve_hoomans_mac.zip bin cook_serve_hoomans.command 
+	cd $(BUILDDIR_BIN); zip -r9 cook_serve_hoomans_$(VERSION)_mac.zip bin cook_serve_hoomans.command
 	rm -r $(BUILDDIR_BIN)/bin
 
 $(BUILDDIR_BIN)/cook_serve_hoomans.command: osx/cook_serve_hoomans.command
