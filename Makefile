@@ -81,7 +81,7 @@ endif
 # do less redundant work (when cross compiling):
 .SECONDARY:
 
-all: macapp cook_serve_hoomans quick_patch gmdump gmupdate
+all: $(EXT_DEP) cook_serve_hoomans quick_patch gmdump gmupdate
 
 cook_serve_hoomans: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 
