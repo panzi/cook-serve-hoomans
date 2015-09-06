@@ -91,21 +91,12 @@ static int find_archive(char *path, size_t pathlen) {
 	errno = ENOENT;
 	return -1;
 }
-#else
+#elif defined(__APPLE__)
 static int find_archive(char *path, size_t pathlen) {
 	static const char *paths[] = {
-#ifdef __APPLE__
 		"Library/Application Support/Steam/common/Cook Serve Delicious.app/Contents/Resources/game.ios",
-#else
-		".local/share/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		".local/share/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
-		".local/share/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		".local/share/steam/steamapps/common/CookServeDelicious/assets/game.unx",
-		".steam/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		".steam/steam/steamapps/common/CookServeDelicious/assets/game.unx",
-		".steam/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
-		".steam/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
-#endif
+		"Library/Application Support/Steam/common/CookServeDelicious/Contents/Resources/game.ios",
+		"Library/Application Support/Steam/common/CookServeDelicious/game.ios",
 		NULL
 	};
 	const char *home = getenv("HOME");
@@ -134,8 +125,153 @@ static int find_archive(char *path, size_t pathlen) {
 	errno = ENOENT;
 	return -1;
 }
+#else // default: Linux
+#include <dirent.h>
+
+static int find_path_ignore_case(const char *home, const char *prefix, const char* const path[], char buf[], size_t size) {
+	int count = snprintf(buf, size, "%s/%s", home, prefix);
+	if (count < 0) {
+		return -1;
+	}
+	else if ((size_t)count >= size) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
+	for (const char* const* nameptr = path; *nameptr; ++ nameptr) {
+		const char* realname = NULL;
+		DIR *dir = opendir(buf);
+
+		if (!dir) {
+			if (errno != ENOENT) {
+				perror(buf);
+			}
+			return -1;
+		}
+
+		for (;;) {
+			errno = 0;
+			struct dirent *entry = readdir(dir);
+			if (entry) {
+				if (strcasecmp(entry->d_name, *nameptr) == 0) {
+					realname = entry->d_name;
+					break;
+				}
+			}
+			else if (errno == 0) {
+				break; // end of dir
+			}
+			else {
+				perror(buf);
+				return -1;
+			}
+		}
+
+		if (!realname) {
+			closedir(dir);
+			errno = ENOENT;
+			return -1;
+		}
+
+		if (strlen(buf) + strlen(realname) + 2 > size) {
+			errno = ENAMETOOLONG;
+			return -1;
+		}
+
+		strcat(buf, "/");
+		strcat(buf, realname);
+
+		closedir(dir);
+	}
+
+	return 0;
+}
+
+static int find_archive(char *path, size_t pathlen) {
+	// Steam was developed for Windows, which has case insenstive file names.
+	// Therefore I can't assume a certain case and because I don't want to write
+	// a parser for registry.vdf I scan the filesystem for certain names in a case
+	// insensitive manner.
+	static const char* const path1[] = {".local/share", "Steam", "SteamApps", "common", "CookServeDelicious" ,"assets", "game.unx", NULL};
+	static const char* const path2[] = {".steam", "Steam", "SteamApps", "common", "CookServeDelicious", "assets", "game.unx", NULL};
+	static const char const* const* paths[] = {path1, path2, NULL};
+
+	const char *home = getenv("HOME");
+
+	if (!home) {
+		return -1;
+	}
+
+	for (const char* const* const* ptr = paths; ptr; ++ ptr) {
+		const char* const* path_spec = *ptr;
+		if (find_path_ignore_case(home, path_spec[0], path_spec + 1, path, pathlen) == 0) {
+			struct stat info;
+
+			if (stat(path, &info) < 0) {
+				if (errno != ENOENT) {
+					perror(path);
+				}
+			}
+			else if (S_ISREG(info.st_mode)) {
+				return 0;
+			}
+		}
+	}
+
+	errno = ENOENT;
+	return -1;
+}
 #endif
 
+#ifdef __linux__
+
+// use sendfile() under Linux for zero-context switch file copy
+#include <fcntl.h>
+#include <sys/sendfile.h>
+
+static int copyfile(const char *src, const char *dst) {
+	int status =  0;
+	int infd   = -1;
+	int outfd  = -1;
+	struct stat info;
+
+	infd = open(src, O_RDONLY);
+	if (infd < 0) {
+		goto error;
+	}
+
+	outfd = open(dst, O_CREAT | O_WRONLY);
+	if (outfd < 0) {
+		goto error;
+	}
+
+	if (fstat(infd, &info) < 0) {
+		goto error;
+	}
+
+	if (sendfile(outfd, infd, NULL, (size_t)info.st_size) < (ssize_t)info.st_size) {
+		goto error;
+	}
+
+	goto end;
+
+error:
+	status = -1;
+
+end:
+	if (infd >= 0) {
+		close(infd);
+		infd = -1;
+	}
+
+	if (outfd >= 0) {
+		close(outfd);
+		outfd = -1;
+	}
+
+	return status;
+}
+#else
 static int copyfile(const char *src, const char *dst) {
 	char buf[BUFSIZ];
 	FILE *fsrc = NULL;
@@ -187,6 +323,7 @@ end:
 
 	return status;
 }
+#endif
 
 int main(int argc, char *argv[]) {
 	const struct gm_patch patches[] = {
