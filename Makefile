@@ -159,6 +159,7 @@ $(BUILDDIR_BIN)/gmupdate$(BINEXT): $(UPD_OBJ)
 $(BUILDDIR_BIN)/make_resource$(BINEXT): $(RES_OBJ)
 	$(CC) $(ARCH_FLAGS) $(RES_OBJ) -o $@
 
+clean: VERSION=$(shell git describe --tags)
 clean:
 	rm -f \
 		$(BUILDDIR_SRC)/hoomans_png.h \
