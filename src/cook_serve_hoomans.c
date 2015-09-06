@@ -42,15 +42,15 @@ static int get_path_from_registry(HKEY hKey, LPCTSTR lpSubKey, LPCTSTR lpValueNa
 	}
 
 	if (RegOpenKeyEx(hKey, lpSubKey, 0, KEY_QUERY_VALUE, &hSubKey) != ERROR_SUCCESS) {
-		return EINVAL;
+		return ENOENT;
 	}
 
 	if (RegQueryValueEx(hSubKey, lpValueName, NULL, &dwType, (LPBYTE)path, &dwSize) != ERROR_SUCCESS) {
-		return EINVAL;
+		return ENOENT;
 	}
 
 	if (dwType != REG_SZ) {
-		return EINVAL;
+		return ENOENT;
 	}
 	else if (dwSize > pathlen - sizeof(CSH_DATA_WIN_PATH)) {
 		return ENAMETOOLONG;
@@ -82,7 +82,7 @@ static int find_archive(char *path, size_t pathlen) {
 		if (errnum == 0) {
 			return 0;
 		}
-		else if (errnum != EINVAL) {
+		else if (errnum != ENOENT) {
 			errno = errnum;
 			return -1;
 		}
