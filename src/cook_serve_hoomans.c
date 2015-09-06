@@ -88,12 +88,15 @@ static int find_archive(char *path, size_t pathlen) {
 		}
 	}
 
-	errno = EINVAL;
+	errno = ENOENT;
 	return -1;
 }
 #else
 static int find_archive(char *path, size_t pathlen) {
 	static const char *paths[] = {
+#ifdef __APPLE__
+		"Library/Application Support/Steam/common/Cook Serve Delicious.app/Contents/Resources/game.ios",
+#else
 		".local/share/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
 		".local/share/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
 		".local/share/steam/SteamApps/common/CookServeDelicious/assets/game.unx",
@@ -102,6 +105,7 @@ static int find_archive(char *path, size_t pathlen) {
 		".steam/steam/steamapps/common/CookServeDelicious/assets/game.unx",
 		".steam/Steam/SteamApps/common/CookServeDelicious/assets/game.unx",
 		".steam/Steam/steamapps/common/CookServeDelicious/assets/game.unx",
+#endif
 		NULL
 	};
 	const char *home = getenv("HOME");
@@ -127,6 +131,7 @@ static int find_archive(char *path, size_t pathlen) {
 		}
 	}
 
+	errno = ENOENT;
 	return -1;
 }
 #endif
