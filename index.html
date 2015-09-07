@@ -2730,35 +2730,46 @@ make patch</pre>
 	(function ($) {
 		"use strict";
 
-		var platform = $.trim(navigator.platform).split(/\s+/)[0];
+		if (location.hash === "#install_mac") {
+			$('.nav-tabs a[href="#install_mac"]').tab('show');
+		}
+		else if (location.hash === "#install_linux") {
+			$('.nav-tabs a[href="#install_linux"]').tab('show');
+		}
+		else if (location.hash === "#install_windows") {
+			$('.nav-tabs a[href="#install_windows"]').tab('show');
+		}
+		else {
+			var platform = $.trim(navigator.platform).split(/\s+/)[0];
 
-		switch (platform) {
-			case 'Macintosh':
-			case 'MacPPC':
-			case 'MacIntel':
-			case 'Mac68K':
-			case 'iPod':
-			case 'iPhone':
-			case 'iPad':
-				$('.nav-tabs a[href="#install_mac"]').tab('show');
-				break;
+			switch (platform) {
+				case 'Macintosh':
+				case 'MacPPC':
+				case 'MacIntel':
+				case 'Mac68K':
+				case 'iPod':
+				case 'iPhone':
+				case 'iPad':
+					$('.nav-tabs a[href="#install_mac"]').tab('show');
+					break;
 
-			case 'Linux':
-			case 'FreeBSD':
-			case 'OpenBSD':
-			case 'X11':
-				$('.nav-tabs a[href="#install_linux"]').tab('show');
-				break;
+				case 'Linux':
+				case 'FreeBSD':
+				case 'OpenBSD':
+				case 'X11':
+					$('.nav-tabs a[href="#install_linux"]').tab('show');
+					break;
 
-			case 'Windows':
-			case 'WinCE':
-			case 'Win16':
-			case 'Win32':
-			case 'Win64':
-			case 'Android':
-			default:
-				$('.nav-tabs a[href="#install_windows"]').tab('show');
-				break;
+				case 'Windows':
+				case 'WinCE':
+				case 'Win16':
+				case 'Win32':
+				case 'Win64':
+				case 'Android':
+				default:
+					$('.nav-tabs a[href="#install_windows"]').tab('show');
+					break;
+			}
 		}
 	})(jQuery);
 	// ]]>
