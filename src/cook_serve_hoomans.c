@@ -92,11 +92,14 @@ static int find_archive(char *path, size_t pathlen) {
 	return -1;
 }
 #elif defined(__APPLE__)
+
+#define CSD_APP_ARCHIVE "/Applications/Cook Serve Delicious.app/Contents/Resources/game.ios"
+
 static int find_archive(char *path, size_t pathlen) {
 	static const char *paths[] = {
-		"Library/Application Support/Steam/common/Cook Serve Delicious.app/Contents/Resources/game.ios",
-		"Library/Application Support/Steam/common/CookServeDelicious/Contents/Resources/game.ios",
-		"Library/Application Support/Steam/common/CookServeDelicious/game.ios",
+		"Library/Application Support/Steam/SteamApps/common/Cook Serve Delicious.app/Contents/Resources/game.ios",
+		"Library/Application Support/Steam/SteamApps/common/CookServeDelicious/Contents/Resources/game.ios",
+		"Library/Application Support/Steam/SteamApps/common/CookServeDelicious/game.ios",
 		NULL
 	};
 	const char *home = getenv("HOME");
@@ -120,6 +123,21 @@ static int find_archive(char *path, size_t pathlen) {
 		else if (S_ISREG(info.st_mode)) {
 			return 0;
 		}
+	}
+
+	if (stat(CSD_APP_ARCHIVE, &info) < 0) {
+		if (errno != ENOENT) {
+			perror(path);
+		}
+		return -1;
+	}
+	else if (S_ISREG(info.st_mode)) {
+		if (strlen(CSD_APP_ARCHIVE) + 1 > pathlen) {
+			errno = ENAMETOOLONG;
+			return -1;
+		}
+		strcpy(path, CSD_APP_ARCHIVE);
+		return 0;
 	}
 
 	errno = ENOENT;

@@ -189,6 +189,7 @@ clean:
 		$(BUILDDIR_BIN)/icons_png.o \
 		$(BUILDDIR_BIN)/game_maker.o \
 		$(BUILDDIR_BIN)/png_info.o \
+		$(BUILDDIR_BIN)/make_resource.o \
 		$(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT) \
 		$(BUILDDIR_BIN)/quick_patch$(BINEXT) \
 		$(BUILDDIR_BIN)/gmdump$(BINEXT) \
