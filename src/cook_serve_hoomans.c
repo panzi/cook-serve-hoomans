@@ -93,15 +93,10 @@ static int find_archive(char *path, size_t pathlen) {
 }
 #elif defined(__APPLE__)
 
-#define CSD_APP_ARCHIVE "/Applications/Cook Serve Delicious.app/Contents/Resources/game.ios"
+#define CSD_STEAM_ARCHIVE "Library/Application Support/Steam/SteamApps/common/CookServeDelicious/Cook Serve Delicious.app/Contents/Resources/game.ios"
+#define CSD_APP_ARCHIVE   "/Applications/Cook Serve Delicious.app/Contents/Resources/game.ios"
 
 static int find_archive(char *path, size_t pathlen) {
-	static const char *paths[] = {
-		"Library/Application Support/Steam/SteamApps/common/Cook Serve Delicious.app/Contents/Resources/game.ios",
-		"Library/Application Support/Steam/SteamApps/common/CookServeDelicious/Contents/Resources/game.ios",
-		"Library/Application Support/Steam/SteamApps/common/CookServeDelicious/game.ios",
-		NULL
-	};
 	const char *home = getenv("HOME");
 	struct stat info;
 
@@ -109,12 +104,7 @@ static int find_archive(char *path, size_t pathlen) {
 		return -1;
 	}
 
-	for (const char **ptr = paths; *ptr; ++ ptr) {
-		if (GM_JOIN_PATH(path, pathlen, home, *ptr) != 0) {
-			// ignore too long paths
-			continue;
-		}
-
+	if (GM_JOIN_PATH(path, pathlen, home, CSD_STEAM_ARCHIVE) == 0) {
 		if (stat(path, &info) < 0) {
 			if (errno != ENOENT) {
 				perror(path);
