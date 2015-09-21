@@ -230,6 +230,8 @@ section.success a.active {
     bottom: 0;
     margin: auto;
     max-height: 234px;
+	pointer-events: none;
+	z-index: 1;
 }
 
 #hoomans .hoomans-item .hoomans-link {
@@ -243,10 +245,11 @@ section.success a.active {
     width: 204px;
     height: 234px;
     opacity: 0;
-    background: rgba(24,188,156,.9);
+    background: rgba(24,188,156,.8);
     -webkit-transition: all ease .5s;
     -moz-transition: all ease .5s;
     transition: all ease .5s;
+    z-index: 3;
 }
 
 #hoomans .hoomans-item .hoomans-link .caption:hover {
