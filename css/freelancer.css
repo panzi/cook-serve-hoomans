@@ -224,6 +224,10 @@ section.success a.active {
 }
 
 #hoomans .hoomans-item .img-responsive {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     margin: auto;
     max-height: 234px;
 }
