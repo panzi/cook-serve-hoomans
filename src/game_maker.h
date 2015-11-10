@@ -46,7 +46,8 @@ enum gm_section {
 	GM_FUNC,
 	GM_STRG,
 	GM_TXTR,
-	GM_AUDO
+	GM_AUDO,
+	GM_AGRP
 };
 
 enum gm_patch_src {

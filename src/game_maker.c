@@ -333,6 +333,7 @@ const char *gm_section_name(enum gm_section section) {
 	case GM_STRG: return "STRG";
 	case GM_TXTR: return "TXTR";
 	case GM_AUDO: return "AUDO";
+	case GM_AGRP: return "AGRP";
 	default: return NULL;
 	}
 }
@@ -359,6 +360,7 @@ enum gm_section gm_parse_section(const uint8_t *name) {
 	else if (memcmp("STRG", name, 4) == 0) { return GM_STRG; }
 	else if (memcmp("TXTR", name, 4) == 0) { return GM_TXTR; }
 	else if (memcmp("AUDO", name, 4) == 0) { return GM_AUDO; }
+	else if (memcmp("AGRP", name, 4) == 0) { return GM_AGRP; }
 	else return GM_END;
 }
 
