@@ -125,7 +125,7 @@ All I know about this file format is documented in [fileformat.md](fileformat.md
 
 I don't know what will happen when there is a game update. Will the updater
 corrupt the archive, bail because the file isn't what it expects it to be or
-simply revert the patch? Your guess is a sgood as mine. In any case this program
+simply revert the patch? Your guess is as good as mine. In any case this program
 creates a `data.win.backup` file which you can use in case the game stops
 working. Just remove `data.win` and rename `data.win.backup` to `data.win`.
 
