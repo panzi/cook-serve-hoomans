@@ -334,6 +334,8 @@ const char *gm_section_name(enum gm_section section) {
 	case GM_TXTR: return "TXTR";
 	case GM_AUDO: return "AUDO";
 	case GM_AGRP: return "AGRP";
+	case GM_LANG: return "LANG";
+	case GM_GLOB: return "GLOB";
 	default: return NULL;
 	}
 }
@@ -361,6 +363,8 @@ enum gm_section gm_parse_section(const uint8_t *name) {
 	else if (memcmp("TXTR", name, 4) == 0) { return GM_TXTR; }
 	else if (memcmp("AUDO", name, 4) == 0) { return GM_AUDO; }
 	else if (memcmp("AGRP", name, 4) == 0) { return GM_AGRP; }
+	else if (memcmp("LANG", name, 4) == 0) { return GM_LANG; }
+	else if (memcmp("GLOB", name, 4) == 0) { return GM_GLOB; }
 	else return GM_END;
 }
 
@@ -412,7 +416,7 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 		}
 
 		const uint32_t value = U32LE_FROM_BUF(buffer);
-		if (value != 1) {
+		if (value > 1) {
 			LOG_ERR("at offset %" PRIi64 ", section %s, entry %" PRIuPTR ": unexpected value of non-reverse engineered field: value = %" PRIu32,
 				(int64_t)info_offsets[index], gm_section_name(section->section), index, value);
 

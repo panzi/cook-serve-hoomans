@@ -79,6 +79,8 @@ game.unx).
    - STRG
    - TXTR
    - AUDO
+   - LANG
+   - GLOB
 
 ### FORM
 
@@ -173,7 +175,9 @@ are offsets to any file data chunks in this chunk.
 #### FileInfo
 
      Offset  Size  Type         Description
-          0     4  uint32_t     always 1 (maybe a file type? flags?)
+          0     4  uint32_t     always 1 in Cook, Serve, Delicious!
+                                saw 0 in another game
+                                (maybe a file type? flags?)
           4     4  uint32_t     absolute offset of file data
 
 There is no information about the size of the texture files anywhere in the

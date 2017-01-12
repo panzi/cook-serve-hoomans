@@ -394,7 +394,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "*** ERROR: Error patching archive: %s\n", strerror(errno));
 		goto error;
 	}
-	
+
 	printf("Successfully pached game.\n");
 
 	goto end;
