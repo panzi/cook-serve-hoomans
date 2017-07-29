@@ -29,7 +29,11 @@ CSH_OBJ=$(BUILDDIR_BIN)/cook_serve_hoomans.o \
 DMP_OBJ=$(BUILDDIR_BIN)/gmdump.o \
         $(BUILDDIR_BIN)/game_maker.o \
         $(BUILDDIR_BIN)/png_info.o
-        
+
+INF_OBJ=$(BUILDDIR_BIN)/gminfo.o \
+        $(BUILDDIR_BIN)/game_maker.o \
+        $(BUILDDIR_BIN)/png_info.o
+
 UPD_OBJ=$(BUILDDIR_BIN)/gmupdate.o \
         $(BUILDDIR_BIN)/game_maker.o \
         $(BUILDDIR_BIN)/png_info.o
@@ -81,13 +85,15 @@ endif
 # do less redundant work (when cross compiling):
 .SECONDARY:
 
-all: cook_serve_hoomans quick_patch gmdump gmupdate
+all: cook_serve_hoomans quick_patch gmdump gmupdate gminfo
 
 cook_serve_hoomans: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 
 quick_patch: $(BUILDDIR_BIN)/quick_patch$(BINEXT)
 
 gmdump: $(BUILDDIR_BIN)/gmdump$(BINEXT)
+
+gminfo: $(BUILDDIR_BIN)/gminfo$(BINEXT)
 
 gmupdate: $(BUILDDIR_BIN)/gmupdate$(BINEXT)
 
@@ -125,12 +131,13 @@ $(BUILDDIR_BIN)/%.command: osx/%.command
 $(BUILDDIR_BIN)/README.txt: osx/README.txt
 	cp $< $@
 
-$(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip: quick_patch gmdump gmupdate
+$(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip: quick_patch gmdump gminfo gmupdate
 	mkdir -p $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
 	cp \
 		README.md \
 		$(BUILDDIR_BIN)/quick_patch$(BINEXT) \
 		$(BUILDDIR_BIN)/gmdump$(BINEXT) \
+		$(BUILDDIR_BIN)/gminfo$(BINEXT) \
 		$(BUILDDIR_BIN)/gmupdate$(BINEXT) \
 		$(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
 	cd $(BUILDDIR_BIN); zip -r9 utils-for-advanced-users-$(VERSION)-$(TARGET).zip \
@@ -164,6 +171,9 @@ $(BUILDDIR_BIN)/quick_patch$(BINEXT): $(QP_OBJ)
 $(BUILDDIR_BIN)/gmdump$(BINEXT): $(DMP_OBJ)
 	$(CC) $(ARCH_FLAGS) $(DMP_OBJ) -o $@
 
+$(BUILDDIR_BIN)/gminfo$(BINEXT): $(INF_OBJ)
+	$(CC) $(ARCH_FLAGS) $(INF_OBJ) -o $@
+
 $(BUILDDIR_BIN)/gmupdate$(BINEXT): $(UPD_OBJ)
 	$(CC) $(ARCH_FLAGS) $(UPD_OBJ) -o $@
 
@@ -183,6 +193,7 @@ clean:
 		$(BUILDDIR_BIN)/cook_serve_hoomans.o \
 		$(BUILDDIR_BIN)/quick_patch.o \
 		$(BUILDDIR_BIN)/gmdump.o \
+		$(BUILDDIR_BIN)/gminfo.o \
 		$(BUILDDIR_BIN)/gmupdate.o \
 		$(BUILDDIR_BIN)/hoomans_png.o \
 		$(BUILDDIR_BIN)/catering_png.o \
@@ -193,6 +204,7 @@ clean:
 		$(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT) \
 		$(BUILDDIR_BIN)/quick_patch$(BINEXT) \
 		$(BUILDDIR_BIN)/gmdump$(BINEXT) \
+		$(BUILDDIR_BIN)/gminfo$(BINEXT) \
 		$(BUILDDIR_BIN)/gmupdate$(BINEXT) \
 		$(BUILDDIR_BIN)/make_resource$(BINEXT) \
 		$(BUILDDIR_BIN)/README.txt \
