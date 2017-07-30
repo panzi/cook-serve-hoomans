@@ -158,6 +158,51 @@ Absolute offsets to strings in other chunks point directly to the characters
           4     N  char[N]      characters
         4+N     1  char         '\0'
 
+### SPRT
+
+Sprite info.
+
+    Offset  Size  Type         Description
+         0     4  char[4]      chunk magic: 'SPRT'
+         4     4  uint32_t     chunk body size
+         8     4  uint32_t     number of sprites (N)
+        12   4*N  uint32_t[N]  sprite offsets
+
+#### Sprite
+
+    Offset  Size  Type         Description
+         0     4  uint32_t     sprite name (offset into STRG)
+         4    60  ?            ?
+        64     4  uint32_t     offset into TPAG
+        68     4  uint32_t     always(?) 1
+        71     ?  ?            some junk that might be a bitmap? alpha map?
+                               lots of 0xFF, some 0x00, a few other values
+
+### TPAG
+
+Contains coordinates for sprites in textures files.
+
+    Offset  Size  Type         Description
+         0     4  char[4]      chunk magic: 'TPAG'
+         4     4  uint32_t     chunk body size
+         8     4  uint32_t     number of records (N)
+        12   4*N  uint32_t[N]  record offsets
+
+#### Record
+
+    Offset  Size  Type         Description
+         0     2  uint16_t     x
+         2     2  uint16_t     y
+         4     2  uint16_t     width
+         6     2  uint16_t     height
+         8     2  uint16_t     ? (mostly 0)
+        10     2  uint16_t     ? (mostly 0)
+        12     2  uint16_t     width again?
+        14     2  uint16_t     height again?
+        16     2  uint16_t     width again??
+        18     2  uint16_t     height again??
+        20     2  uint16_t     TXTR index
+
 ### TXTR
 
 I brute-force searched all the other chunks and haven't found any values that
