@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import struct
 import collections
 from PIL import Image
@@ -119,6 +120,35 @@ def dump_sprites(fp, outdir):
 				else:
 					sprts[txtr_index] = [sprite_info]
 
+		elif magic == b'BGND':
+			bgnd_count, = struct.unpack("<I", fp.read(4))
+			data = fp.read(4 * bgnd_count)
+			bgnd_offsets = struct.unpack("<%dI" % bgnd_count, data)
+
+			for offset in bgnd_offsets:
+				fp.seek(offset, 0)
+				data = fp.read(4 * 5)
+				bgnd_record = struct.unpack('<IIIII', data)
+
+				strptr = bgnd_record[0]
+				fp.seek(strptr - 4, 0)
+				strlen, = struct.unpack('<I', fp.read(4))
+				bgnd_name = fp.read(strlen).decode()
+
+				tpagptr = bgnd_record[-1]
+				fp.seek(tpagptr, 0)
+				data = fp.read(22)
+				tpag = struct.unpack('<HHHHHHHHHHH', data)
+
+				txtr_index = tpag[-1]
+				rect = tpag[:4]
+
+				bgnd_info = (bgnd_name, rect)
+				if txtr_index in sprts:
+					sprts[txtr_index].append(bgnd_info)
+				else:
+					sprts[txtr_index] = [bgnd_info]
+
 		elif magic == b'TXTR':
 			start_offset = fp.tell()
 			count, = struct.unpack("<I", fp.read(4))
@@ -153,12 +183,15 @@ def dump_sprites(fp, outdir):
 
 					image = Image.open(BytesIO(data))
 
+					sprite_dir = pjoin(outdir, str(index))
+					os.makedirs(sprite_dir, exist_ok=True)
+
 					for sprite_name, rect in sprites:
 						if sprite_name in seen_names:
 							raise FileFormatError("Sprite double occurence: " + sprite_name)
 
 						seen_names.add(sprite_name)
-						sprite_filename = pjoin(outdir, sprite_name + '.png')
+						sprite_filename = pjoin(sprite_dir, sprite_name + '.png')
 						print(sprite_filename)
 						x, y, width, height = rect
 						sprite = image.crop((x, y, x + width, y + height))

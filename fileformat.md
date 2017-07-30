@@ -53,10 +53,10 @@ Basic chunk layout:
          8     N  uint8_t[N]  content
 
 This means the overall size of a chuck is N + 8.
-         
+
 Chunk hierarchy as found in the Cook, Serve, Delicious! archive (data.win or
 game.unx).
-         
+
  * FORM
    - GEN8
    - OPTN
@@ -147,7 +147,7 @@ such).
 
 Because of the absolute offsets I wouldn't expect the strings to actually start
 right after the offset table.
-    
+
 #### String
 
 Absolute offsets to strings in other chunks point directly to the characters
@@ -177,6 +177,26 @@ Sprite info.
         68     4  uint32_t     always(?) 1
         71     ?  ?            some junk that might be a bitmap? alpha map?
                                lots of 0xFF, some 0x00, a few other values
+
+	BGND
+	----
+
+Similar to SPRT but for background images.
+
+    Offset  Size  Type         Description
+         0     4  char[4]      chunk magic: 'BGND'
+         4     4  uint32_t     chunk body size
+         8     4  uint32_t     number of backgrounds (N)
+        12   4*N  uint32_t[N]  background offsets
+
+Background:
+
+    Offset  Size  Type         Description
+         0     4  uint32_t     background name (offset into STRG)
+         4     4  ?            always 0?
+         8     4  ?            always 0?
+        12     4  ?            always 0?
+        16     4  uint32_t     offset into TPAG
 
 ### TPAG
 
