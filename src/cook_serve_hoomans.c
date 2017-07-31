@@ -1,8 +1,6 @@
 #include "cook_serve_hoomans.h"
 #include "game_maker.h"
-#include "catering_png.h"
-#include "hoomans_png.h"
-#include "icons_png.h"
+#include "csh_patch_def.h"
 
 #include <strings.h>
 #include <stdbool.h>
@@ -334,13 +332,6 @@ end:
 #endif
 
 int main(int argc, char *argv[]) {
-	const struct gm_patch patches[] = {
-		GM_PATCH_TXTR(CSH_CATERING_INDEX, csh_catering, CSH_CATERING_SIZE, CSH_CATERING_WIDTH, CSH_CATERING_HEIGHT),
-		GM_PATCH_TXTR(CSH_ICONS_INDEX,    csh_icons,    CSH_ICONS_SIZE,    CSH_ICONS_WIDTH,    CSH_ICONS_HEIGHT),
-		GM_PATCH_TXTR(CSH_HOOMANS_INDEX,  csh_hoomans,  CSH_HOOMANS_SIZE,  CSH_HOOMANS_WIDTH,  CSH_HOOMANS_HEIGHT),
-		GM_PATCH_END
-	};
-
 	char game_name_buf[PATH_MAX];
 	char backup_name[PATH_MAX];
 	int status = EXIT_SUCCESS;
@@ -390,7 +381,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// patch the archive
-	if (gm_patch_archive(game_name, patches) != 0) {
+	if (gm_patch_archive(game_name, csh_patches) != 0) {
 		fprintf(stderr, "*** ERROR: Error patching archive: %s\n", strerror(errno));
 		goto error;
 	}

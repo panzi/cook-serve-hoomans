@@ -4,7 +4,7 @@ TARGET=$(shell uname|tr '[A-Z]' '[a-z]')$(shell getconf LONG_BIT)
 BUILDDIR=build
 BUILDDIR_BIN=$(BUILDDIR)/$(TARGET)
 BUILDDIR_SRC=$(BUILDDIR)/src
-INCLUDE=-I$(BUILDDIR_SRC)
+INCLUDE=-I$(BUILDDIR_SRC) -Isrc
 COMMON_CFLAGS=-Wall -Werror -Wextra -std=gnu11 $(INCLUDE)
 ifeq ($(DEBUG),ON)
 	COMMON_CFLAGS+=-g -DDEBUG
@@ -22,9 +22,10 @@ QP_OBJ=$(BUILDDIR_BIN)/quick_patch.o \
 CSH_OBJ=$(BUILDDIR_BIN)/cook_serve_hoomans.o \
         $(BUILDDIR_BIN)/game_maker.o \
         $(BUILDDIR_BIN)/png_info.o \
-        $(BUILDDIR_BIN)/hoomans_png.o \
-        $(BUILDDIR_BIN)/catering_png.o \
-        $(BUILDDIR_BIN)/icons_png.o
+        $(BUILDDIR_BIN)/csh_00017_data.o \
+        $(BUILDDIR_BIN)/csh_00042_data.o \
+        $(BUILDDIR_BIN)/csh_00047_data.o \
+        $(BUILDDIR_BIN)/csh_patch_def.o
 
 DMP_OBJ=$(BUILDDIR_BIN)/gmdump.o \
         $(BUILDDIR_BIN)/game_maker.o \
@@ -36,9 +37,6 @@ INF_OBJ=$(BUILDDIR_BIN)/gminfo.o \
 
 UPD_OBJ=$(BUILDDIR_BIN)/gmupdate.o \
         $(BUILDDIR_BIN)/game_maker.o \
-        $(BUILDDIR_BIN)/png_info.o
-
-RES_OBJ=$(BUILDDIR_BIN)/make_resource.o \
         $(BUILDDIR_BIN)/png_info.o
 
 EXT_DEP=
@@ -79,9 +77,9 @@ endif
 endif
 endif
 
-.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate make_resource patch setup pkg
+.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate patch setup pkg
 
-# keep intermediary files (e.g. hoomans_png.c) to
+# keep intermediary files (e.g. csh_patch_def.c) to
 # do less redundant work (when cross compiling):
 .SECONDARY:
 
@@ -96,8 +94,6 @@ gmdump: $(BUILDDIR_BIN)/gmdump$(BINEXT)
 gminfo: $(BUILDDIR_BIN)/gminfo$(BINEXT)
 
 gmupdate: $(BUILDDIR_BIN)/gmupdate$(BINEXT)
-
-make_resource: $(BUILDDIR_BIN)/make_resource$(BINEXT)
 
 setup:
 	mkdir -p $(BUILDDIR_BIN) $(BUILDDIR_SRC)
@@ -144,8 +140,8 @@ $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip: quick_patch g
 		utils-for-advanced-users-$(VERSION)-$(TARGET)
 	rm -r $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
 
-$(BUILDDIR_SRC)/%_png.c: images/%.png $(BUILDDIR_BIN)/make_resource$(BINEXT)
-	$(BUILDDIR_BIN)/make_resource$(BINEXT) csh_$(shell basename $< .png) $< $(basename $@).h $@
+$(BUILDDIR_SRC)/csh_patch_def.h: $(wildcard sprites/*/*.png)
+	scripts/build_sprites.py sprites $(BUILDDIR_SRC)
 
 $(BUILDDIR_SRC)/%_png.h: $(BUILDDIR_SRC)/%_png.c;
 
@@ -157,9 +153,7 @@ $(BUILDDIR_BIN)/%.o: $(BUILDDIR_SRC)/%.c
 
 $(BUILDDIR_BIN)/cook_serve_hoomans.o: \
 		src/cook_serve_hoomans.c \
-		$(BUILDDIR_SRC)/hoomans_png.h \
-		$(BUILDDIR_SRC)/catering_png.h \
-		$(BUILDDIR_SRC)/icons_png.h
+		$(BUILDDIR_SRC)/csh_patch_def.h
 	$(CC) $(ARCH_FLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT): $(CSH_OBJ)
@@ -177,36 +171,27 @@ $(BUILDDIR_BIN)/gminfo$(BINEXT): $(INF_OBJ)
 $(BUILDDIR_BIN)/gmupdate$(BINEXT): $(UPD_OBJ)
 	$(CC) $(ARCH_FLAGS) $(UPD_OBJ) -o $@
 
-$(BUILDDIR_BIN)/make_resource$(BINEXT): $(RES_OBJ)
-	$(CC) $(ARCH_FLAGS) $(RES_OBJ) -o $@
-
 clean: VERSION=$(shell git describe --tags)
 clean:
 	rm -f \
-		$(BUILDDIR_SRC)/hoomans_png.h \
-		$(BUILDDIR_SRC)/hoomans_png.c \
-		$(BUILDDIR_SRC)/catering_png.h \
-		$(BUILDDIR_SRC)/catering_png.c \
-		$(BUILDDIR_SRC)/icons_png.h \
-		$(BUILDDIR_SRC)/icons_png.c \
+		$(BUILDDIR_SRC)/csh_00017_data.c \
+		$(BUILDDIR_SRC)/csh_00042_data.c \
+		$(BUILDDIR_SRC)/csh_00047_data.c \
+		$(BUILDDIR_SRC)/csh_patch_def.h \
+		$(BUILDDIR_SRC)/csh_patch_def.c \
 		$(BUILDDIR_BIN)/patch_game.o \
 		$(BUILDDIR_BIN)/cook_serve_hoomans.o \
 		$(BUILDDIR_BIN)/quick_patch.o \
 		$(BUILDDIR_BIN)/gmdump.o \
 		$(BUILDDIR_BIN)/gminfo.o \
 		$(BUILDDIR_BIN)/gmupdate.o \
-		$(BUILDDIR_BIN)/hoomans_png.o \
-		$(BUILDDIR_BIN)/catering_png.o \
-		$(BUILDDIR_BIN)/icons_png.o \
 		$(BUILDDIR_BIN)/game_maker.o \
 		$(BUILDDIR_BIN)/png_info.o \
-		$(BUILDDIR_BIN)/make_resource.o \
 		$(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT) \
 		$(BUILDDIR_BIN)/quick_patch$(BINEXT) \
 		$(BUILDDIR_BIN)/gmdump$(BINEXT) \
 		$(BUILDDIR_BIN)/gminfo$(BINEXT) \
 		$(BUILDDIR_BIN)/gmupdate$(BINEXT) \
-		$(BUILDDIR_BIN)/make_resource$(BINEXT) \
 		$(BUILDDIR_BIN)/README.txt \
 		$(BUILDDIR_BIN)/cook_serve_hoomans.command \
 		$(BUILDDIR_BIN)/open_with_cook_serve_hoomans.command \

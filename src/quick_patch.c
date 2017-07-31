@@ -9,6 +9,10 @@
 #include <strings.h>
 #include <errno.h>
 
+#define CSH_CATERING_INDEX 17
+#define CSH_ICONS_INDEX    42
+#define CSH_HOOMANS_INDEX  47
+
 static const char *filename(const char *path) {
 	const char *ptr = path + strlen(path) - 1;
 

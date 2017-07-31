@@ -10,8 +10,4 @@
 #	define CSH_GAME_ARCHIVE "game.unx"
 #endif
 
-#define CSH_CATERING_INDEX 17
-#define CSH_ICONS_INDEX    42
-#define CSH_HOOMANS_INDEX  47
-
 #endif

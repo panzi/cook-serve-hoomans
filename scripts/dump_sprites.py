@@ -6,63 +6,13 @@ import collections
 from PIL import Image
 from io import BytesIO
 from os.path import join as pjoin
+from game_maker import *
 
-PNG_SIG = b'\x89PNG\r\n\x1a\n'
-
-class FileFormatError(ValueError):
-	pass
-
-class PNGInfo(collections.namedtuple("PNGInfo",[
-			"filesize", "size", "magic", "width", "height", "bitdepth", "colortype",
-			"compression", "filter", "interlace", "crc"
-		])):
-	@property
-	def what(self):
-		return 'PNG'
-
-	@property
-	def details(self):
-		return "%dx%d" % (self.width, self.height)
-
-def parse_png_info(fp):
-	sig = fp.read(8)
-	if sig != PNG_SIG:
-		raise FileFormatError("not a PNG file: %r" % sig)
-	hdr = fp.read(25)
-	size, magic, width, height, bitdepth, colortype, compression, \
-	filter, interlace, crc = struct.unpack(">I4sIIBBBBBI",hdr)
-
-	if magic != b'IHDR':
-		raise FileFormatError("expected IHDR chunk but got: %r" % magic)
-
-	filesize = 8 + 25
-
-	if bitdepth != 1 and bitdepth != 2 and bitdepth != 4 and bitdepth != 8 and bitdepth != 16:
-		raise FileFormatError("unexpected bitdepth value: %d" % bitdepth)
-
-	if colortype != 0 and colortype != 2 and colortype != 3 and colortype != 4 and colortype != 6:
-		raise FileFormatError("unexpected colortype value: %d" % colortype)
-
-	if compression != 0 and filter != 0:
-		raise FileFormatError("filter and compression are both non-zero")
-
-	if interlace != 0 and interlace != 1:
-		raise FileFormatError("unexpected interlace value: %d" % interlace)
-
-	while True:
-		data = fp.read(8)
-		chunk_size, chunk_magic = struct.unpack(">I4s",data)
-		if not chunk_magic.isalpha():
-			raise FileFormatError("unexpected chunk magic: %r" % chunk_magic)
-
-		filesize += chunk_size + 12
-		fp.seek(chunk_size + 4, 1)
-
-		if chunk_magic == b'IEND':
-			break
-
-	return PNGInfo(filesize, size, magic, width, height, bitdepth, colortype,
-		compression, filter, interlace, crc)
+# RECONSTRUCT = {
+# 	17: 'images/catering.png',
+# 	42: 'images/icons.png',
+# 	47: 'images/hoomans.png',
+# }
 
 def dump_sprites(fp, outdir):
 	fp.seek(0, 2)
@@ -183,8 +133,19 @@ def dump_sprites(fp, outdir):
 
 					image = Image.open(BytesIO(data))
 
-					sprite_dir = pjoin(outdir, str(index))
+					sprite_dir = pjoin(outdir, '%05d' % index)
 					os.makedirs(sprite_dir, exist_ok=True)
+
+					txtr_filename = pjoin(outdir, '%05d.png' % index)
+					print(txtr_filename)
+					with open(txtr_filename, 'wb') as outfp:
+						outfp.write(data)
+
+					# if index in RECONSTRUCT:
+					# 	img = Image.open(RECONSTRUCT[index])
+					# 	os.makedirs(pjoin('sprites', str(index)), exist_ok=True)
+					# else:
+					# 	img = None
 
 					for sprite_name, rect in sprites:
 						if sprite_name in seen_names:
@@ -193,9 +154,15 @@ def dump_sprites(fp, outdir):
 						seen_names.add(sprite_name)
 						sprite_filename = pjoin(sprite_dir, sprite_name + '.png')
 						print(sprite_filename)
+
 						x, y, width, height = rect
-						sprite = image.crop((x, y, x + width, y + height))
+						box = (x, y, x + width, y + height)
+						sprite = image.crop(box)
 						sprite.save(sprite_filename)
+
+						# if img:
+						# 	sprite = img.crop(box)
+						# 	sprite.save(pjoin('sprites', str(index), sprite_name + '.png'))
 
 		fp.seek(next_offset, 0)
 

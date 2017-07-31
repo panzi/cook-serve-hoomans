@@ -6,7 +6,7 @@ static void gm_print_info(const struct gm_index *index, FILE *out) {
 	fprintf(out, "Offset       Size             Type      Index Info\n");
 	for (; index->section != GM_END; ++ index) {
 		fprintf(out, "0x%010" PRIXPTR " 0x%010" PRIXPTR " --- %-9s -----",
-			index->offset,
+			(size_t)index->offset,
 			index->size,
 			gm_section_name(index->section));
 
@@ -14,10 +14,13 @@ static void gm_print_info(const struct gm_index *index, FILE *out) {
 			case GM_AUDO:
 			case GM_TXTR:
 				fprintf(out, " %" PRIuPTR " entries\n", index->entry_count);
-				for (size_t i = 0; i < index->entry_count; ++ i) {
-					const struct gm_entry *entry = &index->entries[i];
+				for (size_t entry_index = 0; entry_index < index->entry_count; ++ entry_index) {
+					const struct gm_entry *entry = &index->entries[entry_index];
 					fprintf(out, "0x%010" PRIXPTR " 0x%010" PRIXPTR "     %-9s %5" PRIuPTR,
-						entry->offset, entry->size, gm_typename(entry->type), i);
+						(size_t)entry->offset,
+						entry->size,
+						gm_typename(entry->type),
+						entry_index);
 
 					if (index->section == GM_TXTR) {
 						fprintf(out, " %4" PRIuPTR " x %-4" PRIuPTR,

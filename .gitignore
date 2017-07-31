@@ -16,3 +16,6 @@ opt/*.png
 opt/tmp
 /build/*
 /dump/**
+__pycache__
+*.pyo
+*.pyc
