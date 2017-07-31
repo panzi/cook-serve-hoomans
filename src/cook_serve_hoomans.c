@@ -64,12 +64,12 @@ static int get_path_from_registry(HKEY hKey, LPCTSTR lpSubKey, LPCTSTR lpValueNa
 
 static int find_archive(char *path, size_t pathlen) {
 	static const struct reg_path reg_paths[] = {
-		// Have confirmed sigthing of these keys:
+		// Have confirmed sigthings of these keys:
 		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Valve\\Steam"),              TEXT("InstallPath") },
 		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("InstallPath") },
 		{ HKEY_CURRENT_USER,  TEXT("Software\\Valve\\Steam"),              TEXT("SteamPath")   },
 
-		// All the other possible combination, just to to try everything:
+		// All the other possible combination, just to try everything:
 		{ HKEY_CURRENT_USER,  TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("SteamPath")   },
 		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Valve\\Steam"),              TEXT("SteamPath")   },
 		{ HKEY_LOCAL_MACHINE, TEXT("Software\\Wow6432node\\Valve\\Steam"), TEXT("SteamPath")   },
