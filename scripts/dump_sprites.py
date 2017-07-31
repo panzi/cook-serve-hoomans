@@ -169,7 +169,12 @@ def dump_sprites(fp, outdir):
 if __name__ == '__main__':
 	import sys
 
-	archive = sys.argv[1]
-	outdir = sys.argv[2]
+	outdir = sys.argv[1]
+
+	if len(sys.argv) > 2:
+		archive = sys.argv[2]
+	else:
+		archive = find_archive()
+
 	with open(archive, 'rb') as fp:
 		dump_sprites(fp, outdir)
