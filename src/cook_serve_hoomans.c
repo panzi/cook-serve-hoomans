@@ -44,8 +44,11 @@ static int get_path_from_registry(HKEY hKey, LPCTSTR lpSubKey, LPCTSTR lpValueNa
 	}
 
 	if (RegQueryValueEx(hSubKey, lpValueName, NULL, &dwType, (LPBYTE)path, &dwSize) != ERROR_SUCCESS) {
+		RegCloseKey(hSubKey);
 		return ENOENT;
 	}
+
+	RegCloseKey(hSubKey);
 
 	if (dwType != REG_SZ) {
 		return ENOENT;
