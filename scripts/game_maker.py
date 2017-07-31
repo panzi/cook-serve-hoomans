@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import struct
+import platform
 import collections
 from os.path import isdir, isfile, join as pjoin
 
@@ -183,13 +183,14 @@ def find_path_ignore_case(prefix, path, index):
 
 	raise FileNotFoundError('game archive not found')
 
-if sys.platform == 'linux':
-	linux_paths = [
-		[".local/share", "Steam", "SteamApps", "common", "CookServeDelicious" ,"assets", "game.unx"],
-		[".steam", "Steam", "SteamApps", "common", "CookServeDelicious", "assets", "game.unx"]
-	]
+if platform.system() == 'Linux':
 
 	def find_archive():
+		linux_paths = [
+			[".local/share", "Steam", "SteamApps", "common", "CookServeDelicious" ,"assets", "game.unx"],
+			[".steam", "Steam", "SteamApps", "common", "CookServeDelicious", "assets", "game.unx"]
+		]
+
 		home = os.getenv('HOME')
 		for path in linux_paths:
 			try:
@@ -198,6 +199,57 @@ if sys.platform == 'linux':
 				pass
 
 		raise FileNotFoundError('game archive not found')
-else:
+
+elif platform.system() == 'Darwin':
+
 	def find_archive():
-		raise ValueError('Auto find of the game archive is currently not supported on your system. Please pass the archive manually.')
+		path = pjoin(os.getenv("HOME"), "Library/Application Support/Steam/SteamApps/common/CookServeDelicious/Cook Serve Delicious.app/Contents/Resources/game.ios")
+		if isfile(path):
+			return path
+
+		path = "/Applications/Cook Serve Delicious.app/Contents/Resources/game.ios"
+		if isfile(path):
+			return path
+
+		raise FileNotFoundError('game archive not found')
+
+elif platform.system() == 'Windows' or platform.system().startswith('CYGWIN'):
+
+	from winreg import HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, REG_SZ, KEY_QUERY_VALUE, OpenKeyEx, QueryValueEx, CloseKey
+
+	def find_archive():
+		reg_keys = [
+			# Have confirmed sigthings of these keys:
+			( HKEY_LOCAL_MACHINE, "Software\\Valve\\Steam",              "InstallPath" ),
+			( HKEY_LOCAL_MACHINE, "Software\\Wow6432node\\Valve\\Steam", "InstallPath" ),
+			( HKEY_CURRENT_USER,  "Software\\Valve\\Steam",              "SteamPath"   ),
+
+			# All the other possible combination, just to try everything:
+			( HKEY_CURRENT_USER,  "Software\\Wow6432node\\Valve\\Steam", "SteamPath"   ),
+			( HKEY_LOCAL_MACHINE, "Software\\Valve\\Steam",              "SteamPath"   ),
+			( HKEY_LOCAL_MACHINE, "Software\\Wow6432node\\Valve\\Steam", "SteamPath"   ),
+			( HKEY_CURRENT_USER,  "Software\\Valve\\Steam",              "InstallPath" ),
+			( HKEY_CURRENT_USER,  "Software\\Wow6432node\\Valve\\Steam", "InstallPath" ),
+		]
+
+		for key, subkey, valkey in reg_keys:
+			try:
+				hkey = OpenKeyEx(key, subkey, 0, KEY_QUERY_VALUE)
+				try:
+					value, valtype = QueryValueEx(hkey, valkey)
+					if valtype == REG_SZ:
+						return pjoin(value, "steamapps\\common\\CookServeDelicious\\data.win")
+				finally:
+					CloseKey(hkey)
+			except FileNotFoundError:
+				pass
+
+		raise FileNotFoundError('game archive not found')
+
+else:
+
+	def find_archive():
+		raise NotImplementedError('Auto find of the game archive is not supported on your system. Please pass the archive manually.')
+
+if __name__ == '__main__':
+	print(find_archive())
