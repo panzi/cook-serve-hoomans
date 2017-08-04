@@ -20,11 +20,20 @@
 	((uint32_t)((BUF)[2]) << 16) | \
 	((uint32_t)((BUF)[3]) << 24))
 
+#define U16LE_FROM_BUF(BUF) ( \
+	 (uint32_t)((BUF)[0]) | \
+	((uint32_t)((BUF)[1]) << 8))
+
 #define WRITE_U32LE(BUF,N) { \
 	(BUF)[0] =  (uint32_t)(N)        & 0xFF; \
 	(BUF)[1] = ((uint32_t)(N) >>  8) & 0xFF; \
 	(BUF)[2] = ((uint32_t)(N) >> 16) & 0xFF; \
 	(BUF)[3] = ((uint32_t)(N) >> 24) & 0xFF; \
+}
+
+#define WRITE_U16LE(BUF,N) { \
+	(BUF)[0] =  (uint32_t)(N)       & 0xFF; \
+	(BUF)[1] = ((uint32_t)(N) >> 8) & 0xFF; \
 }
 
 #define LOG_ERR(FMT, ...) fprintf(stderr, "*** ERROR: " FMT "\n", ## __VA_ARGS__)
@@ -46,7 +55,7 @@ static int gm_copydata(FILE *src, off_t srcoff, FILE *dst, off_t dstoff, size_t 
 	if (fseeko(src, srcoff, SEEK_SET) != 0) {
 		return -1;
 	}
-	
+
 	if (fseeko(dst, dstoff, SEEK_SET) != 0) {
 		return -1;
 	}
@@ -79,7 +88,7 @@ static int gm_mkpath(const char *pathname) {
 		errno = EINVAL;
 		return -1;
 	}
-	
+
 	if (!*pathname) {
 		LOG_ERR_MSG("pathname cannot be empty");
 
@@ -174,7 +183,7 @@ static int gm_write_patch_data(FILE *fp, const struct gm_patch *patch) {
 			}
 		}
 		break;
-	
+
 	default:
 		errno = EINVAL;
 		status = -1;
@@ -188,6 +197,24 @@ void gm_free_index(struct gm_index *index) {
 	if (index) {
 		for (struct gm_index *ptr = index; ptr->section != GM_END; ++ ptr) {
 			if (ptr->entries) {
+				switch (ptr->section) {
+				case GM_SPRT:
+					for (size_t index = 0; index < ptr->entry_count; ++ index) {
+						free(ptr->entries[index].meta.sprt.name);
+						ptr->entries[index].meta.sprt.name = NULL;
+					}
+					break;
+
+				case GM_BGND:
+					for (size_t index = 0; index < ptr->entry_count; ++ index) {
+						free(ptr->entries[index].meta.bgnd.name);
+						ptr->entries[index].meta.bgnd.name = NULL;
+					}
+					break;
+
+				default:
+					break;
+				}
 				free(ptr->entries);
 				ptr->entries = NULL;
 			}
@@ -210,7 +237,7 @@ int gm_shift_tail(struct gm_patched_index *index, off_t offset) {
 		switch (index->section) {
 		// only know how to move these sections so far:
 		case GM_TXTR:
-		case GM_AUDO:			
+		case GM_AUDO:
 			break;
 
 		default:
@@ -234,8 +261,85 @@ int gm_patch_entry(struct gm_patched_index *index, const struct gm_patch *patch)
 	switch (index->section) {
 	// only know how to patch these sections so far:
 	case GM_TXTR:
-	case GM_AUDO:			
+	case GM_AUDO:
 		break;
+
+	case GM_SPRT:
+	{
+		bool found = false;
+		for (size_t i = 0; i < index->entry_count; ++ i) {
+			const struct gm_entry *entry = index->entries[i].entry;
+			if (strcmp(entry->meta.sprt.name, patch->meta.sprt.name) == 0) {
+				found = true;
+
+				if (entry->meta.sprt.x != patch->meta.sprt.x ||
+				    entry->meta.sprt.y != patch->meta.sprt.y ||
+				    entry->meta.sprt.width  != patch->meta.sprt.width ||
+				    entry->meta.sprt.height != patch->meta.sprt.height) {
+
+					LOG_ERR("Sprite %s has incompatible coordinates. patch: x=%"
+					        PRIuPTR " y=%" PRIuPTR " width=%" PRIuPTR " height=%"
+					        PRIuPTR ", game archive: x=%" PRIuPTR " y=%" PRIuPTR
+					        " width=%" PRIuPTR " height=%" PRIuPTR,
+					        patch->meta.sprt.name, patch->meta.sprt.x,
+					        patch->meta.sprt.y, patch->meta.sprt.width,
+					        patch->meta.sprt.height, entry->meta.sprt.x,
+					        entry->meta.sprt.y, entry->meta.sprt.width,
+					        entry->meta.sprt.height);
+
+					errno = EINVAL;
+					return -1;
+				}
+			}
+		}
+
+		if (!found) {
+			LOG_ERR("can't find sprite %s in game archive", patch->meta.sprt.name);
+
+			errno = EINVAL;
+			return -1;
+		}
+
+		return 0;
+	}
+	case GM_BGND:
+	{
+		bool found = false;
+		for (size_t i = 0; i < index->entry_count; ++ i) {
+			const struct gm_entry *entry = index->entries[i].entry;
+			if (strcmp(entry->meta.bgnd.name, patch->meta.bgnd.name) == 0) {
+				found = true;
+
+				if (entry->meta.bgnd.x != patch->meta.bgnd.x ||
+				    entry->meta.bgnd.y != patch->meta.bgnd.y ||
+				    entry->meta.bgnd.width  != patch->meta.bgnd.width ||
+				    entry->meta.bgnd.height != patch->meta.bgnd.height) {
+
+					LOG_ERR("Background %s has incompatible coordinates. patch: x=%"
+					        PRIuPTR " y=%" PRIuPTR " width=%" PRIuPTR " height=%"
+					        PRIuPTR ", game archive: x=%" PRIuPTR " y=%" PRIuPTR
+					        " width=%" PRIuPTR " height=%" PRIuPTR,
+					        patch->meta.bgnd.name, patch->meta.bgnd.x,
+					        patch->meta.bgnd.y, patch->meta.bgnd.width,
+					        patch->meta.bgnd.height, entry->meta.bgnd.x,
+					        entry->meta.bgnd.y, entry->meta.bgnd.width,
+					        entry->meta.bgnd.height);
+
+					errno = EINVAL;
+					return -1;
+				}
+			}
+		}
+
+		if (!found) {
+			LOG_ERR("can't find background %s in game archive", patch->meta.bgnd.name);
+
+			errno = EINVAL;
+			return -1;
+		}
+
+		return 0;
+	}
 
 	default:
 		LOG_ERR("can't patch %s section (not implemented)", gm_section_name(index->section));
@@ -368,6 +472,254 @@ enum gm_section gm_parse_section(const uint8_t *name) {
 	else return GM_END;
 }
 
+int gm_read_index_sprt(FILE *game, struct gm_index *section) {
+	uint8_t buffer[17 * 4];
+	size_t count = 0;
+	struct gm_entry *entries = NULL;
+	int status = 0;
+
+	if (fread(buffer, 4, 1, game) != 1) {
+		goto error;
+	}
+
+	count = U32LE_FROM_BUF(buffer);
+	entries = calloc(count, sizeof(struct gm_entry));
+	if (!entries) {
+		goto error;
+	}
+
+	for (size_t index = 0; index < count; ++ index) {
+		struct gm_entry *entry = &entries[index];
+
+		if (fread(buffer, 4, 1, game) != 1) {
+			goto error;
+		}
+
+		off_t next_offset = ftello(game);
+		if (next_offset < 0) {
+			goto error;
+		}
+
+		off_t offset = U32LE_FROM_BUF(buffer);
+		if (fseeko(game, offset, SEEK_SET) != 0) {
+			goto error;
+		}
+
+		if (fread(buffer, 17 * 4, 1, game) != 1) {
+			goto error;
+		}
+
+		uint32_t str_offset = U32LE_FROM_BUF(buffer);
+		if (str_offset > INT32_MAX && str_offset >= 4) {
+			LOG_ERR("offset not in range: offset = %" PRIu32 ", min. allowed = 4, max. allowed = %" PRIu32, str_offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		uint32_t tpag_offset = U32LE_FROM_BUF(buffer + (15 * 4));
+		if (tpag_offset > INT32_MAX) {
+			LOG_ERR("offset too big: offset = %" PRIu32 ", max. allowed = %" PRIu32, tpag_offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		if (fseeko(game, str_offset - 4, SEEK_SET) != 0) {
+			goto error;
+		}
+
+		if (fread(buffer, 4, 1, game) != 1) {
+			goto error;
+		}
+
+		uint32_t str_length = U32LE_FROM_BUF(buffer);
+		if (str_length == UINT32_MAX) {
+			LOG_ERR("string size too big: string size = %" PRIu32 ", max. allowed = %" PRIu32, str_length, UINT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		char *str = calloc(str_length + 1, 1);
+		if (str == NULL) {
+			goto error;
+		}
+
+		size_t read_count;
+		if ((read_count = fread(str, str_length, 1, game)) != 1) {
+			free(str);
+			goto error;
+		}
+
+		if (fseeko(game, tpag_offset, SEEK_SET) != 0) {
+			free(str);
+			goto error;
+		}
+
+		if (fread(buffer, 11 * 2, 1, game) != 1) {
+			free(str);
+			goto error;
+		}
+
+		entry->meta.sprt.name       = str;
+		entry->meta.sprt.x          = U16LE_FROM_BUF(buffer);
+		entry->meta.sprt.y          = U16LE_FROM_BUF(buffer +  2);
+		entry->meta.sprt.width      = U16LE_FROM_BUF(buffer +  4);
+		entry->meta.sprt.height     = U16LE_FROM_BUF(buffer +  6);
+		entry->meta.sprt.txtr_index = U16LE_FROM_BUF(buffer + 20);
+
+		if (fseeko(game, next_offset, SEEK_SET) != 0) {
+			goto error;
+		}
+	}
+
+	section->entry_count = count;
+	section->entries     = entries;
+
+	goto end;
+
+error:
+	status = -1;
+
+	if (entries) {
+		for (size_t index = 0; index < count; ++ index) {
+			struct gm_entry *entry = &entries[index];
+			free(entry->meta.sprt.name);
+			entry->meta.sprt.name = NULL;
+		}
+		free(entries);
+		entries = NULL;
+	}
+
+end:
+
+	return status;
+}
+int gm_read_index_bgnd(FILE *game, struct gm_index *section) {
+	uint8_t buffer[17 * 4];
+	size_t count = 0;
+	struct gm_entry *entries = NULL;
+	int status = 0;
+
+	if (fread(buffer, 4, 1, game) != 1) {
+		goto error;
+	}
+
+	count = U32LE_FROM_BUF(buffer);
+	entries = calloc(count, sizeof(struct gm_entry));
+	if (!entries) {
+		goto error;
+	}
+
+	for (size_t index = 0; index < count; ++ index) {
+		struct gm_entry *entry = &entries[index];
+
+		if (fread(buffer, 4, 1, game) != 1) {
+			goto error;
+		}
+
+		off_t next_offset = ftello(game);
+		if (next_offset < 0) {
+			goto error;
+		}
+
+		off_t offset = U32LE_FROM_BUF(buffer);
+		if (fseeko(game, offset, SEEK_SET) != 0) {
+			goto error;
+		}
+
+		if (fread(buffer, 5 * 4, 1, game) != 1) {
+			goto error;
+		}
+
+		uint32_t str_offset = U32LE_FROM_BUF(buffer);
+		if (str_offset > INT32_MAX && str_offset >= 4) {
+			LOG_ERR("offset not in range: offset = %" PRIu32 ", min. allowed = 4, max. allowed = %" PRIu32, str_offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		uint32_t tpag_offset = U32LE_FROM_BUF(buffer + (4 * 4));
+		if (tpag_offset > INT32_MAX) {
+			LOG_ERR("offset too big: offset = %" PRIu32 ", max. allowed = %" PRIu32, tpag_offset, INT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		if (fseeko(game, str_offset - 4, SEEK_SET) != 0) {
+			goto error;
+		}
+
+		if (fread(buffer, 4, 1, game) != 1) {
+			goto error;
+		}
+
+		uint32_t str_length = U32LE_FROM_BUF(buffer);
+		if (str_length == UINT32_MAX) {
+			LOG_ERR("string size too big: string size = %" PRIu32 ", max. allowed = %" PRIu32, str_length, UINT32_MAX);
+
+			errno = ERANGE;
+			goto error;
+		}
+
+		char *str = calloc(str_length + 1, 1);
+		if (str == NULL) {
+			goto error;
+		}
+
+		if (fread(str, str_length, 1, game) != 1) {
+			free(str);
+			goto error;
+		}
+
+		if (fseeko(game, tpag_offset, SEEK_SET) != 0) {
+			free(str);
+			goto error;
+		}
+
+		if (fread(buffer, 11 * 2, 1, game) != 1) {
+			free(str);
+			goto error;
+		}
+
+		entry->meta.bgnd.name       = str;
+		entry->meta.bgnd.x          = U16LE_FROM_BUF(buffer);
+		entry->meta.bgnd.y          = U16LE_FROM_BUF(buffer +  2);
+		entry->meta.bgnd.width      = U16LE_FROM_BUF(buffer +  4);
+		entry->meta.bgnd.height     = U16LE_FROM_BUF(buffer +  6);
+		entry->meta.bgnd.txtr_index = U16LE_FROM_BUF(buffer + 20);
+
+		if (fseeko(game, next_offset, SEEK_SET) != 0) {
+			goto error;
+		}
+	}
+
+	section->entry_count = count;
+	section->entries     = entries;
+
+	goto end;
+
+error:
+	status = -1;
+
+	if (entries) {
+		for (size_t index = 0; index < count; ++ index) {
+			struct gm_entry *entry = &entries[index];
+			free(entry->meta.bgnd.name);
+			entry->meta.bgnd.name = NULL;
+		}
+		free(entries);
+		entries = NULL;
+	}
+
+end:
+
+	return status;
+}
+
 int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 	uint8_t buffer[8];
 	size_t count = 0;
@@ -404,7 +756,7 @@ int gm_read_index_txtr(FILE *game, struct gm_index *section) {
 		}
 		info_offsets[index] = (off_t)offset;
 	}
-	
+
 	for (size_t index = 0; index < count; ++ index) {
 		struct gm_entry *entry = &entries[index];
 		if (fseeko(game, info_offsets[index], SEEK_SET) != 0) {
@@ -509,7 +861,7 @@ int gm_read_index_audo(FILE *game, struct gm_index *section) {
 		}
 		offsets[index] = (off_t)offset;
 	}
-	
+
 	for (size_t index = 0; index < count; ++ index) {
 		struct gm_entry *entry = &entries[index];
 		if (fseeko(game, offsets[index], SEEK_SET) != 0) {
@@ -567,7 +919,6 @@ struct gm_index *gm_read_index(FILE *game) {
 	size_t capacity = 32;
 	size_t count = 0;
 	struct gm_index *index = calloc(capacity, sizeof(struct gm_index));
-
 	if (!index) {
 		goto error;
 	}
@@ -589,7 +940,7 @@ struct gm_index *gm_read_index(FILE *game) {
 	const size_t form_size = U32LE_FROM_BUF(buffer + 4);
 	const off_t end_offset = form_size + 8;
 	off_t offset = 8;
-	
+
 	while (offset < end_offset) {
 		if (fread(buffer, 8, 1, game) != 1) {
 			goto error;
@@ -638,6 +989,18 @@ struct gm_index *gm_read_index(FILE *game) {
 		section->size    = section_size;
 
 		switch (section_type) {
+		case GM_SPRT:
+			if (gm_read_index_sprt(game, section) != 0) {
+				goto error;
+			}
+			break;
+
+		case GM_BGND:
+			if (gm_read_index_bgnd(game, section) != 0) {
+				goto error;
+			}
+			break;
+
 		case GM_TXTR:
 			if (gm_read_index_txtr(game, section) != 0) {
 				goto error;
@@ -921,7 +1284,7 @@ error:
 		fclose(game);
 		game = NULL;
 	}
-	
+
 	if (tmp) {
 		fclose(tmp);
 		tmp = NULL;
@@ -999,7 +1362,7 @@ static int gm_patch_scan_dir(struct gm_patch_buf *pbuf, const char *dirname, con
 				perror("listing files");
 				goto error;
 			}
-			
+
 			char *endptr = NULL;
 			long int index = strtol(entry->d_name, &endptr, 10);
 			bool ext_matches = false;

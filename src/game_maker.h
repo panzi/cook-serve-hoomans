@@ -74,8 +74,32 @@ struct gm_patch {
 			size_t width;
 			size_t height;
 		} txtr;
+
+		struct {
+			const char *name;
+			size_t x;
+			size_t y;
+			size_t width;
+			size_t height;
+			size_t txtr_index;
+		} sprt;
+
+		struct {
+			const char *name;
+			size_t x;
+			size_t y;
+			size_t width;
+			size_t height;
+			size_t txtr_index;
+		} bgnd;
 	} meta;
 };
+
+#define GM_PATCH_SPRT(NAME, X, Y, WIDTH, HEIGHT, TXTR_INDEX) \
+	{ GM_SPRT, 0, GM_PNG, GM_SRC_MEM, 0, { .data = NULL }, { .sprt = { (NAME), (X), (Y), (WIDTH), (HEIGHT), (TXTR_INDEX) } } }
+
+#define GM_PATCH_BGND(NAME, X, Y, WIDTH, HEIGHT, TXTR_INDEX) \
+	{ GM_BGND, 0, GM_PNG, GM_SRC_MEM, 0, { .data = NULL }, { .bgnd = { (NAME), (X), (Y), (WIDTH), (HEIGHT), (TXTR_INDEX) } } }
 
 #define GM_PATCH_TXTR(INDEX, DATA, SIZE, WIDTH, HEIGHT) \
 	{ GM_TXTR, (INDEX), GM_PNG, GM_SRC_MEM, (SIZE), { .data = (DATA) }, { .txtr = { (WIDTH), (HEIGHT) } } }
@@ -96,12 +120,30 @@ struct gm_entry {
 			size_t width;
 			size_t height;
 		} txtr;
+
+		struct {
+			char *name;
+			size_t x;
+			size_t y;
+			size_t width;
+			size_t height;
+			size_t txtr_index;
+		} sprt;
+
+		struct {
+			char *name;
+			size_t x;
+			size_t y;
+			size_t width;
+			size_t height;
+			size_t txtr_index;
+		} bgnd;
 	} meta;
 };
 
 struct gm_index {
 	enum gm_section section;
-	
+
 	off_t  offset;
 	size_t size;
 
@@ -140,6 +182,8 @@ const char              *gm_section_name(enum gm_section section);
 const char              *gm_extension(enum gm_filetype type);
 const char              *gm_typename(enum gm_filetype type);
 enum gm_section          gm_parse_section(const uint8_t *magic);
+int                      gm_read_index_sprt(FILE *game, struct gm_index *section);
+int                      gm_read_index_bgnd(FILE *game, struct gm_index *section);
 int                      gm_read_index_txtr(FILE *game, struct gm_index *section);
 int                      gm_read_index_audo(FILE *game, struct gm_index *section);
 struct gm_index         *gm_read_index(FILE *game);

@@ -7,7 +7,32 @@ from io import BytesIO
 from os.path import splitext, join as pjoin
 from game_maker import *
 
+def escape_c_byte(c):
+	if c == 34:
+		return b'\\"'
+	elif c == 92:
+		return b'\\\\'
+	elif c == 10:
+		return b'\\n'
+	elif c == 13:
+		return b'\\r'
+	elif c == 9:
+		return b'\\t'
+	elif c >= 0x20 and c <= 0x7e:
+		buf = bytearray(1)
+		buf[0] = c
+		return buf
+	else:
+		return ('\\x%02x' % c).encode()
+
+def escape_c_string(s):
+	return b''.join(escape_c_byte(c) for c in s.encode()).decode()
+
 def build_sprites(fp, spritedir, builddir):
+	patch_def = []
+	patch_data_externs = []
+	patch_data_c = []
+
 	fp.seek(0, 2)
 	file_size = fp.tell()
 	fp.seek(0, 0)
@@ -63,13 +88,16 @@ def build_sprites(fp, spritedir, builddir):
 					tpag = struct.unpack('<HHHHHHHHHHH', data)
 
 					txtr_index = tpag[-1]
-					rect = tpag[:4]
+					(x, y, width, height) = rect = tpag[:4]
 
 					sprite_info = (sprite_name, rect)
 					if txtr_index in replacement_sprites_by_txtr:
 						replacement_sprites_by_txtr[txtr_index].append(sprite_info)
 					else:
 						replacement_sprites_by_txtr[txtr_index] = [sprite_info]
+
+					patch_def.append('GM_PATCH_SPRT("%s", %d, %d, %d, %d, %d)' % (
+						escape_c_string(sprite_name), x, y, width, height, txtr_index))
 
 		elif magic == b'BGND':
 			bgnd_count, = struct.unpack("<I", fp.read(4))
@@ -93,13 +121,16 @@ def build_sprites(fp, spritedir, builddir):
 					tpag = struct.unpack('<HHHHHHHHHHH', data)
 
 					txtr_index = tpag[-1]
-					rect = tpag[:4]
+					(x, y, width, height) = rect = tpag[:4]
 
 					bgnd_info = (bgnd_name, rect)
 					if txtr_index in replacement_sprites_by_txtr:
 						replacement_sprites_by_txtr[txtr_index].append(bgnd_info)
 					else:
 						replacement_sprites_by_txtr[txtr_index] = [bgnd_info]
+
+					patch_def.append('GM_PATCH_BGND("%s", %d, %d, %d, %d, %d)' % (
+						escape_c_string(bgnd_name), x, y, width, height, txtr_index))
 
 		elif magic == b'TXTR':
 			start_offset = fp.tell()
@@ -156,10 +187,6 @@ def build_sprites(fp, spritedir, builddir):
 					replacement_txtrs[index] = (image.size, buf.getvalue())
 
 		fp.seek(next_offset, 0)
-
-	patch_def = []
-	patch_data_externs = []
-	patch_data_c = []
 
 	for index, ((width, height), data) in replacement_txtrs.items():
 		patch_data_externs.append('extern const uint8_t csh_%05d_data[];' % index)
