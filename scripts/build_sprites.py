@@ -157,14 +157,6 @@ def build_sprites(fp, spritedir, builddir):
 
 		fp.seek(next_offset, 0)
 
-	patch_source = """
-const struct gm_patch patches[] = {
-	GM_PATCH_TXTR(CSH_CATERING_INDEX, csh_catering, CSH_CATERING_SIZE, CSH_CATERING_WIDTH, CSH_CATERING_HEIGHT),
-	GM_PATCH_TXTR(CSH_ICONS_INDEX,    csh_icons,    CSH_ICONS_SIZE,    CSH_ICONS_WIDTH,    CSH_ICONS_HEIGHT),
-	GM_PATCH_TXTR(CSH_HOOMANS_INDEX,  csh_hoomans,  CSH_HOOMANS_SIZE,  CSH_HOOMANS_WIDTH,  CSH_HOOMANS_HEIGHT),
-	GM_PATCH_END
-};
-	"""
 	patch_def = []
 	patch_data_externs = []
 	patch_data_c = []
