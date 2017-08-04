@@ -140,7 +140,7 @@ $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip: quick_patch g
 		utils-for-advanced-users-$(VERSION)-$(TARGET)
 	rm -r $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET)
 
-$(BUILDDIR_SRC)/csh_patch_def.h: $(wildcard sprites/*/*.png)
+$(BUILDDIR_SRC)/csh_patch_def.h: $(wildcard sprites/*/*.png) scripts/build_sprites.py
 	scripts/build_sprites.py sprites $(BUILDDIR_SRC)
 
 $(BUILDDIR_SRC)/%_png.h: $(BUILDDIR_SRC)/%_png.c;
