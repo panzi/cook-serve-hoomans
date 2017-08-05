@@ -77,7 +77,7 @@ endif
 endif
 endif
 
-.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate patch setup pkg
+.PHONY: all clean cook_serve_hoomans quick_patch gmdump gmupdate patch setup pkg build_sprites
 
 # keep intermediary files (e.g. csh_patch_def.c) to
 # do less redundant work (when cross compiling):
@@ -100,6 +100,9 @@ setup:
 
 patch: $(BUILDDIR_BIN)/cook_serve_hoomans$(BINEXT)
 	$<
+
+build_sprites:
+	scripts/build_sprites.py sprites $(BUILDDIR_SRC)
 
 pkg: VERSION=$(shell git describe --tags)
 pkg: $(BUILDDIR_BIN)/utils-for-advanced-users-$(VERSION)-$(TARGET).zip $(EXT_DEP) cook_serve_hoomans
