@@ -140,6 +140,8 @@ def parse_ogg_info(fp):
 	while True:
 		offset = fp.tell()
 		hdr = fp.read(27)
+		if not hdr:
+			break
 		magic, stream_version, type_flags, abs_g_pos, ser_strno, pageno, crc, nsegs = struct.unpack("<4sBBQIIIB",hdr)
 		if magic != b'OggS':
 			if filesize == 0:

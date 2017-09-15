@@ -33,12 +33,12 @@ def _dump_TXTR(fp,area_size,nesting):
 		except FileFormatError:
 			fp.seek(offset,0)
 			details = "first bytes: %r" % fp.read(4)
-			print("%s(data)%s %10d %10s %4d %s" % (indent1, indent2, offset, "N/A", index, details))
+			print("%s(data)%s %10d %10s %4d %d %s" % (indent1, indent2, offset, "N/A", index, unknown, details))
 		else:
 			details = "%dx%d" % (info.width, info.height)
 			if offset + info.filesize > end_offset:
 				raise FileFormatError("PNG file at offset %d overflows TXTR data section end" % offset)
-			print("%s PNG  %s %10d %10d %4d %s" % (indent1,  indent2, offset, info.filesize, index, details))
+			print("%s PNG  %s %10d %10d %4d %d %s" % (indent1,  indent2, offset, info.filesize, index, unknown, details))
 
 	fp.seek(end_offset,0)
 
